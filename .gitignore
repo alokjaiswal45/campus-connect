@@ -1,0 +1,28 @@
+backend/target/
+frontend/node_modules/
+frontend/dist/
+backend/uploads/
+.env
+.idea/
+.vscode/
+# Ignore Spring Boot configuration containing passwords
+/backend/src/main/resources/application.properties
+# Eclipse files
+backend/.settings/
+backend/.classpath
+backend/.project
+
+# Additional environment files
+.env.*
+!.env.example
+# Angular cache
+frontend/.angular/
+
+# Eclipse generated files
+backend/.classpath
+backend/.project
+backend/.settings/
+frontend/.angular/
+backend/.classpath
+backend/.project
+backend/.settings/

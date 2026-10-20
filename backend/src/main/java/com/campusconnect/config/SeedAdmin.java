@@ -1,0 +1,3 @@
+package com.campusconnect.config;
+import com.campusconnect.model.User;import com.campusconnect.repo.UserRepository;import org.springframework.beans.factory.annotation.Value;import org.springframework.boot.CommandLineRunner;import org.springframework.context.annotation.*;import org.springframework.security.crypto.password.PasswordEncoder;
+@Configuration public class SeedAdmin {@Bean CommandLineRunner seed(UserRepository repo,PasswordEncoder encoder,@Value("${app.admin.email}") String email,@Value("${app.admin.password}") String password){return args->{if(repo.findByEmailIgnoreCase(email).isEmpty())repo.save(new User("Administrator",email,encoder.encode(password),"ADMIN"));};}}

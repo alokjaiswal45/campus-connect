@@ -1,0 +1,1150 @@
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+
+    <div class="brand">
+      <span class="brand-icon">✦</span>
+      <div>
+        campus<span>connect</span>
+        <small>YOUR COLLEGE, CONNECTED</small>
+      </div>
+    </div>
+
+    <div class="nav-label">WORKSPACE</div>
+
+    <button
+      [class.active]="page === 'dashboard'"
+      (click)="nav('dashboard')">
+      ▦ <span>Overview</span>
+    </button>
+
+    <button
+      [class.active]="page === 'resources'"
+      (click)="nav('resources')">
+      ▤ <span>Study Resources</span>
+    </button>
+
+    <button
+      [class.active]="page === 'papers'"
+      (click)="nav('papers')">
+      ▧ <span>Question Papers</span>
+    </button>
+
+    <button
+      [class.active]="page === 'lost'"
+      (click)="nav('lost')">
+      ◇ <span>Lost &amp; Found</span>
+    </button>
+
+    <ng-container *ngIf="isAdmin">
+      <div class="nav-label space">ADMINISTRATION</div>
+
+      <button
+        [class.active]="page === 'admin'"
+        (click)="nav('admin')">
+        ⚙ <span>Manage Campus</span>
+      </button>
+    </ng-container>
+
+    <div class="sidebar-bottom">
+      <div class="help">
+        🎓 <strong>Made for students</strong>
+        <p>Everything you need for a better campus experience.</p>
+      </div>
+
+      <div class="copyright">
+        CAMPUS CONNECT · v1.0
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+
+      <div class="breadcrumb">
+        Campus Connect
+        <span>/</span>
+
+        <b>
+          {{
+            page === 'dashboard' ? 'Overview' :
+            page === 'resources' ? 'Study Resources' :
+            page === 'papers' ? 'Question Papers' :
+            page === 'lost' ? 'Lost & Found' :
+            page === 'login' ? 'Sign In' :
+            'Administration'
+          }}
+        </b>
+      </div>
+
+      <div class="userbar">
+
+        <span class="status">● Campus portal</span>
+
+        <button
+          class="profile"
+          *ngIf="!user"
+          (click)="nav('login')">
+          Sign in →
+        </button>
+
+        <ng-container *ngIf="user">
+
+          <div class="avatar">
+            {{ user.name?.[0] }}
+          </div>
+
+          <div class="profile-name">
+            {{ user.name }}
+            <small>{{ user.role }}</small>
+          </div>
+
+          <button
+            class="text-button"
+            (click)="logout()">
+            Log out
+          </button>
+
+        </ng-container>
+
+      </div>
+
+    </header>
+
+    <div class="content">
+
+      <!-- ALERTS -->
+      <div class="alert danger" *ngIf="error">
+        {{ error }}
+        <button (click)="error = ''">×</button>
+      </div>
+
+      <div class="alert success" *ngIf="notice">
+        {{ notice }}
+        <button (click)="notice = ''">×</button>
+      </div>
+
+      <!-- DASHBOARD -->
+      <ng-container *ngIf="page === 'dashboard'">
+
+        <div class="hero">
+
+          <div class="hero-copy">
+
+            <div class="eyebrow">
+              WELCOME TO YOUR CAMPUS HUB
+            </div>
+
+            <h1>
+              Everything campus.
+              <em>One connection.</em>
+            </h1>
+
+            <p>
+              Find your study materials, prepare for exams,
+              and stay connected with your campus community.
+            </p>
+
+            <button
+              class="white-btn"
+              (click)="nav('resources')">
+              Explore resources <span>↗</span>
+            </button>
+
+          </div>
+
+          <div class="hero-art">
+            <div class="floating f1">
+              📚 <span>Study smarter</span>
+            </div>
+
+            <div class="hero-circle">✦</div>
+
+            <div class="floating f2">
+              ✓ <span>Stay connected</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h2>Your campus at a glance</h2>
+            <p>Everything you need, right where you need it.</p>
+          </div>
+        </div>
+
+        <div class="stats">
+
+          <div class="stat">
+            <div class="stat-icon purple">▤</div>
+            <div>
+              <strong>{{ docs.length }}</strong>
+              <span>Study documents</span>
+            </div>
+          </div>
+
+          <div class="stat">
+            <div class="stat-icon blue">⌘</div>
+            <div>
+              <strong>{{ branches.length }}</strong>
+              <span>Branches</span>
+            </div>
+          </div>
+
+          <div class="stat">
+            <div class="stat-icon orange">▧</div>
+            <div>
+              <strong>{{ subjects.length }}</strong>
+              <span>Subjects</span>
+            </div>
+          </div>
+
+          <div class="stat">
+            <div class="stat-icon green">◇</div>
+            <div>
+              <strong>{{ items.length }}</strong>
+              <span>Community posts</span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="section-heading">
+          <div>
+            <h2>What would you like to do?</h2>
+            <p>Quick access to your most-used campus services.</p>
+          </div>
+        </div>
+
+        <div class="feature-grid">
+
+          <div class="feature" (click)="nav('resources')">
+            <div class="feature-visual violet">📖</div>
+
+            <div class="feature-body">
+              <span class="feature-tag">ACADEMICS</span>
+              <h3>Study Resources</h3>
+              <p>
+                Semester-wise notes, PDFs and learning
+                materials for every branch.
+              </p>
+              <span class="feature-link">Browse resources ↗</span>
+            </div>
+          </div>
+
+          <div class="feature" (click)="nav('papers')">
+            <div class="feature-visual peach">📝</div>
+
+            <div class="feature-body">
+              <span class="feature-tag">EXAM PREP</span>
+              <h3>Question Papers</h3>
+              <p>
+                Previous SEE and CIE papers to help
+                you prepare with confidence.
+              </p>
+              <span class="feature-link">Explore papers ↗</span>
+            </div>
+          </div>
+
+          <div class="feature" (click)="nav('lost')">
+            <div class="feature-visual mint">🎒</div>
+
+            <div class="feature-body">
+              <span class="feature-tag">COMMUNITY</span>
+              <h3>Lost &amp; Found</h3>
+              <p>
+                Lost something on campus?
+                Let your community help you find it.
+              </p>
+              <span class="feature-link">View items ↗</span>
+            </div>
+          </div>
+
+        </div>
+
+      </ng-container>
+
+      <!-- STUDY RESOURCES / QUESTION PAPERS -->
+      <ng-container *ngIf="page === 'resources' || page === 'papers'">
+
+        <div class="page-heading">
+
+          <div class="eyebrow">ACADEMIC LIBRARY</div>
+
+          <h1>
+            {{
+              page === 'resources'
+                ? 'Study Resources'
+                : 'Previous Question Papers'
+            }}
+          </h1>
+
+          <p>
+            {{
+              page === 'resources'
+                ? 'Browse notes and PDFs by branch, semester, subject and module.'
+                : 'Browse previous question papers by exam and year.'
+            }}
+          </p>
+
+        </div>
+
+        <!-- BACK BUTTON -->
+        <div style="margin-bottom: 18px;" *ngIf="libraryStep !== 'branch'">
+          <button
+            class="outline-btn"
+            (click)="libraryBack()">
+            ← Back
+          </button>
+        </div>
+
+        <!-- STEP 1: BRANCH -->
+        <ng-container *ngIf="libraryStep === 'branch'">
+
+          <div class="section-heading">
+            <div>
+              <h2>Select your branch</h2>
+              <p>Choose your academic department.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let b of branches"
+              (click)="selectLibraryBranch(b)">
+
+              <div class="feature-visual violet">🏫</div>
+
+              <div class="feature-body">
+                <span class="feature-tag">{{ b.code }}</span>
+                <h3>{{ b.name }}</h3>
+                <span class="feature-link">Open branch →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="panel empty" *ngIf="branches.length === 0">
+            <h3>No branches available</h3>
+            <p>Ask an administrator to add a branch.</p>
+          </div>
+
+        </ng-container>
+
+        <!-- STEP 2: SEMESTER -->
+        <ng-container *ngIf="libraryStep === 'semester'">
+
+          <div class="section-heading">
+            <div>
+              <h2>{{ selectedLibraryBranch?.name }}</h2>
+              <p>Select your semester.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let n of [1,2,3,4,5,6,7,8]"
+              (click)="selectLibrarySemester(n)">
+
+              <div class="feature-visual peach">📚</div>
+
+              <div class="feature-body">
+                <h3>Semester {{ n }}</h3>
+                <span class="feature-link">View subjects →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </ng-container>
+
+        <!-- STEP 3: SUBJECT -->
+        <ng-container *ngIf="libraryStep === 'subject'">
+
+          <div class="section-heading">
+            <div>
+              <h2>Semester {{ selectedLibrarySemester }}</h2>
+              <p>Select a subject.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let s of librarySubjects"
+              (click)="selectLibrarySubject(s)">
+
+              <div class="feature-visual mint">📘</div>
+
+              <div class="feature-body">
+                <span class="feature-tag">{{ s.code }}</span>
+                <h3>{{ s.name }}</h3>
+                <span class="feature-link">Open subject →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="panel empty" *ngIf="librarySubjects.length === 0">
+            <h3>No subjects available</h3>
+            <p>No subjects have been added for this semester yet.</p>
+          </div>
+
+        </ng-container>
+
+        <!-- STEP 4A: RESOURCE MODULES -->
+        <ng-container
+          *ngIf="page === 'resources' && libraryStep === 'folder'">
+
+          <div class="section-heading">
+            <div>
+              <h2>{{ selectedLibrarySubject?.name }}</h2>
+              <p>Select a module to view study PDFs.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let n of [1,2,3,4,5]"
+              (click)="selectLibraryModule(n)">
+
+              <div class="feature-visual violet">📁</div>
+
+              <div class="feature-body">
+                <h3>Module {{ n }}</h3>
+                <span class="feature-link">View PDFs →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </ng-container>
+
+        <!-- STEP 4B: QUESTION PAPER EXAM FOLDERS -->
+        <ng-container
+          *ngIf="page === 'papers' && libraryStep === 'folder'">
+
+          <div class="section-heading">
+            <div>
+              <h2>{{ selectedLibrarySubject?.name }}</h2>
+              <p>Select an examination.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let exam of ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY']"
+              (click)="selectLibraryExam(exam)">
+
+              <div class="feature-visual peach">📁</div>
+
+              <div class="feature-body">
+                <h3>
+                  {{
+                    exam === 'SUPPLEMENTARY'
+                      ? 'Supplementary Exam'
+                      : exam
+                  }}
+                </h3>
+                <span class="feature-link">View years →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+        </ng-container>
+
+        <!-- STEP 5: QUESTION PAPER YEAR FOLDERS -->
+        <ng-container
+          *ngIf="page === 'papers' && libraryStep === 'year'">
+
+          <div class="section-heading">
+            <div>
+              <h2>
+                {{
+                  selectedLibraryExam === 'SUPPLEMENTARY'
+                    ? 'Supplementary Exam'
+                    : selectedLibraryExam
+                }}
+              </h2>
+              <p>Select the academic year.</p>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+
+            <div
+              class="feature"
+              *ngFor="let year of libraryYears"
+              (click)="selectLibraryYear(year)">
+
+              <div class="feature-visual mint">📅</div>
+
+              <div class="feature-body">
+                <h3>{{ year }}</h3>
+                <span class="feature-link">View question papers →</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <div class="panel empty" *ngIf="libraryYears.length === 0">
+            <h3>No question papers available</h3>
+            <p>No papers have been uploaded for this exam yet.</p>
+          </div>
+
+        </ng-container>
+
+        <!-- FINAL STEP: PDF LIST -->
+        <ng-container *ngIf="libraryStep === 'documents'">
+
+          <div class="section-heading">
+            <div>
+
+              <h2 *ngIf="page === 'resources'">
+                Module {{ selectedLibraryModule }}
+              </h2>
+
+              <h2 *ngIf="page === 'papers'">
+                {{
+                  selectedLibraryExam === 'SUPPLEMENTARY'
+                    ? 'Supplementary Exam'
+                    : selectedLibraryExam
+                }}
+                · {{ selectedLibraryYear }}
+              </h2>
+
+              <p>{{ libraryDocuments.length }} PDFs available</p>
+
+            </div>
+          </div>
+
+          <div class="panel docs">
+
+            <ng-container *ngFor="let d of libraryDocuments">
+
+              <div class="doc">
+
+                <div class="pdf-icon">PDF</div>
+
+                <div class="doc-info">
+
+                  <strong>{{ d.title }}</strong>
+
+                  <small>
+                    {{ d.subject?.branch?.code }}
+                    · Semester {{ d.subject?.semester }}
+                    · {{ d.subject?.name }}
+                  </small>
+
+                </div>
+
+                <button
+                  class="outline-btn"
+                  (click)="openDoc(d.id)">
+                  View PDF ↗
+                </button>
+
+                <button
+                  *ngIf="isAdmin"
+                  class="delete-btn"
+                  (click)="removeDoc(d.id)">
+                  Delete
+                </button>
+
+              </div>
+
+            </ng-container>
+
+            <div
+              class="empty"
+              *ngIf="libraryDocuments.length === 0">
+
+              <div>📂</div>
+              <h3>No PDFs uploaded yet</h3>
+              <p>Ask an administrator to upload materials to this folder.</p>
+
+            </div>
+
+          </div>
+
+        </ng-container>
+
+      </ng-container>
+
+      <!-- LOST AND FOUND -->
+      <ng-container *ngIf="page === 'lost'">
+
+        <div class="page-heading">
+          <div class="eyebrow">CAMPUS COMMUNITY</div>
+          <h1>Lost &amp; Found</h1>
+          <p>Helping belongings find their way home.</p>
+        </div>
+
+        <div class="two-col">
+
+          <div class="panel form-panel">
+
+            <h2>Report an item</h2>
+
+            <p class="muted">
+              Found something or looking for something?
+            </p>
+
+            <ng-container *ngIf="user">
+
+              <label>
+                Report type
+
+                <select [(ngModel)]="newItem.kind">
+                  <option value="LOST">I lost something</option>
+                  <option value="FOUND">I found something</option>
+                </select>
+              </label>
+
+              <label>
+                Item name
+
+                <input
+                  [(ngModel)]="newItem.title"
+                  placeholder="e.g. Black water bottle">
+              </label>
+
+              <label>
+                Category
+
+                <input
+                  [(ngModel)]="newItem.category"
+                  placeholder="e.g. Electronics">
+              </label>
+
+              <label>
+                Last seen location
+
+                <input
+                  [(ngModel)]="newItem.location"
+                  placeholder="e.g. Library, 2nd floor">
+              </label>
+
+              <label>
+                Description
+
+                <textarea
+                  [(ngModel)]="newItem.description"
+                  placeholder="Describe the item...">
+                </textarea>
+              </label>
+
+              <button
+                class="primary-btn"
+                (click)="addItem()"
+                [disabled]="!newItem.title">
+                Post report →
+              </button>
+
+            </ng-container>
+
+            <div class="empty" *ngIf="!user">
+
+              <p>Sign in to report an item.</p>
+
+              <button
+                class="primary-btn"
+                (click)="nav('login')">
+                Sign in
+              </button>
+
+            </div>
+
+          </div>
+
+          <div>
+
+            <div class="section-heading">
+              <h2>Recent reports</h2>
+              <span class="pill">{{ items.length }} posts</span>
+            </div>
+
+            <div
+              class="panel item"
+              *ngFor="let i of items.slice().reverse()">
+
+              <div class="item-head">
+
+                <span
+                  class="pill"
+                  [class.found]="i.kind === 'FOUND'">
+                  {{ i.kind }}
+                </span>
+
+                <span class="muted">
+                  {{ i.status }}
+                </span>
+
+              </div>
+
+              <h3>{{ i.title }}</h3>
+
+              <p>{{ i.description }}</p>
+
+              <small>
+                📍 {{ i.location }}
+                · Posted by {{ i.postedBy }}
+              </small>
+
+              <div
+                *ngIf="user && (user.email === i.postedBy || isAdmin) && i.status === 'OPEN'">
+
+                <button
+                  class="outline-btn"
+                  (click)="resolve(i.id)">
+                  Mark resolved
+                </button>
+
+              </div>
+
+            </div>
+
+            <div
+              class="panel empty"
+              *ngIf="items.length === 0">
+              No reports yet. Be the first to help your campus!
+            </div>
+
+          </div>
+
+        </div>
+
+      </ng-container>
+
+      <!-- LOGIN / REGISTER / OTP -->
+      <ng-container *ngIf="page === 'login'">
+
+        <div class="auth panel">
+
+          <div class="auth-icon">✦</div>
+
+          <!-- OTP SCREEN -->
+          <ng-container *ngIf="otpMode">
+
+            <h1>Verify your college email</h1>
+
+            <p>
+              Enter the six-digit verification code sent to
+              your BMSCE college email.
+            </p>
+
+            <label>
+              BMSCE College Email
+
+              <input
+                [(ngModel)]="email"
+                type="email"
+                placeholder="you@bmsce.ac.in">
+            </label>
+
+            <label>
+              Six-digit OTP
+
+              <input
+                [(ngModel)]="otp"
+                type="text"
+                maxlength="6"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                placeholder="Enter OTP">
+            </label>
+
+            <button
+              class="primary-btn"
+              [disabled]="loading || otp.length !== 6"
+              (click)="verifyOtp()">
+              Verify email →
+            </button>
+
+            <p class="auth-switch">
+              Didn't receive the code?
+              <a (click)="sendOtp()">Resend OTP</a>
+            </p>
+
+            <p class="auth-switch">
+              <a (click)="otpMode = false; registerMode = false">
+                ← Back to sign in
+              </a>
+            </p>
+
+          </ng-container>
+
+          <!-- SIGN IN / REGISTRATION -->
+          <ng-container *ngIf="!otpMode">
+
+            <h1>
+              {{
+                registerMode
+                  ? 'Join Campus Connect'
+                  : 'Welcome back'
+              }}
+            </h1>
+
+            <p>
+              {{
+                registerMode
+                  ? 'Create an account using your BMSCE college email'
+                  : 'Sign in using your BMSCE college account'
+              }}
+            </p>
+
+            <label *ngIf="registerMode">
+              Full name
+
+              <input
+                [(ngModel)]="name"
+                placeholder="Your full name">
+            </label>
+
+            <label>
+              BMSCE College Email
+
+              <input
+                [(ngModel)]="email"
+                type="email"
+                placeholder="you@bmsce.ac.in">
+            </label>
+
+            <label>
+              Password
+
+              <input
+                [(ngModel)]="password"
+                type="password"
+                placeholder="At least 8 characters"
+                (keyup.enter)="registerMode ? register() : login()">
+            </label>
+
+            <p class="muted">
+              Only authorized &#64;bmsce.ac.in email addresses
+              are accepted. Email verification is required
+              before signing in.
+            </p>
+
+            <button
+              class="primary-btn"
+              [disabled]="loading"
+              (click)="registerMode ? register() : login()">
+
+              {{
+                registerMode
+                  ? 'Create account'
+                  : 'Sign in'
+              }} →
+
+            </button>
+
+            <p class="auth-switch">
+
+              {{
+                registerMode
+                  ? 'Already have an account?'
+                  : 'New to Campus Connect?'
+              }}
+
+              <a (click)="registerMode = !registerMode">
+                {{
+                  registerMode
+                    ? 'Sign in'
+                    : 'Create account'
+                }}
+              </a>
+
+            </p>
+
+            <p class="auth-switch" *ngIf="!registerMode">
+              Already registered but not verified?
+              <a (click)="otpMode = true">
+                Verify email
+              </a>
+            </p>
+
+          </ng-container>
+
+        </div>
+
+      </ng-container>
+
+      <!-- ADMIN PANEL -->
+      <ng-container *ngIf="page === 'admin'">
+
+        <div class="page-heading">
+          <div class="eyebrow">ADMINISTRATOR WORKSPACE</div>
+          <h1>Manage Campus</h1>
+          <p>
+            Add branches, subjects, and academic documents
+            — all without changing code.
+          </p>
+        </div>
+
+        <div *ngIf="!isAdmin" class="panel empty">
+
+          Administrator access required.
+
+          <button
+            class="primary-btn"
+            (click)="nav('login')">
+            Sign in
+          </button>
+
+        </div>
+
+        <div class="admin-grid" *ngIf="isAdmin">
+
+          <!-- ADD BRANCH -->
+          <div class="panel form-panel">
+
+            <h2>01 · Add a branch</h2>
+
+            <p class="muted">
+              Create a new academic department.
+            </p>
+
+            <label>
+              Branch code
+
+              <input
+                [(ngModel)]="newBranch.code"
+                placeholder="e.g. AIML">
+            </label>
+
+            <label>
+              Branch name
+
+              <input
+                [(ngModel)]="newBranch.name"
+                placeholder="Artificial Intelligence & ML">
+            </label>
+
+            <button
+              class="primary-btn"
+              [disabled]="!newBranch.code || !newBranch.name"
+              (click)="addBranch()">
+              Add branch +
+            </button>
+
+            <div class="mini-list">
+
+              <div *ngFor="let b of branches">
+                <b>{{ b.code }}</b>
+                <span>{{ b.name }}</span>
+              </div>
+
+            </div>
+
+          </div>
+
+          <!-- ADD SUBJECT -->
+          <div class="panel form-panel">
+
+            <h2>02 · Add a subject</h2>
+
+            <p class="muted">
+              Assign subjects to a branch and semester.
+            </p>
+
+            <label>
+              Branch
+
+              <select [(ngModel)]="newSubject.branchId">
+
+                <option value="">Select branch</option>
+
+                <option
+                  *ngFor="let b of branches"
+                  [value]="b.id">
+                  {{ b.code }}
+                </option>
+
+              </select>
+            </label>
+
+            <label>
+              Semester
+
+              <select [(ngModel)]="newSubject.semester">
+
+                <option
+                  *ngFor="let n of [1,2,3,4,5,6,7,8]"
+                  [ngValue]="n">
+                  Semester {{ n }}
+                </option>
+
+              </select>
+            </label>
+
+            <label>
+              Subject code
+
+              <input
+                [(ngModel)]="newSubject.code"
+                placeholder="e.g. BCS301">
+            </label>
+
+            <label>
+              Subject name
+
+              <input
+                [(ngModel)]="newSubject.name"
+                placeholder="e.g. Data Structures">
+            </label>
+
+            <button
+              class="primary-btn"
+              [disabled]="!newSubject.branchId || !newSubject.code || !newSubject.name"
+              (click)="addSubject()">
+              Add subject +
+            </button>
+
+          </div>
+
+          <!-- UPLOAD PDF -->
+          <div class="panel form-panel upload-panel">
+
+            <h2>03 · Upload academic PDF</h2>
+
+            <p class="muted">
+              Upload notes or previous question papers (max 20 MB).
+            </p>
+
+            <label>
+              Subject
+
+              <select [(ngModel)]="newDoc.subjectId">
+
+                <option value="">Select subject</option>
+
+                <option
+                  *ngFor="let s of subjects"
+                  [value]="s.id">
+                  {{ s.branch?.code }}
+                  · Sem {{ s.semester }}
+                  · {{ s.name }}
+                </option>
+
+              </select>
+            </label>
+
+            <label>
+              Document title
+
+              <input
+                [(ngModel)]="newDoc.title"
+                placeholder="e.g. Data Structures Module 1 Notes">
+            </label>
+
+            <label>
+              Document category
+
+              <select [(ngModel)]="newDoc.type">
+                <option value="RESOURCE">Study resource</option>
+                <option value="PAPER">Question paper</option>
+              </select>
+            </label>
+
+            <!-- MODULE -->
+            <label *ngIf="newDoc.type === 'RESOURCE'">
+              Module
+
+              <select [(ngModel)]="newDoc.moduleNumber">
+
+                <option value="">Select module</option>
+                <option [ngValue]="1">Module 1</option>
+                <option [ngValue]="2">Module 2</option>
+                <option [ngValue]="3">Module 3</option>
+                <option [ngValue]="4">Module 4</option>
+                <option [ngValue]="5">Module 5</option>
+
+              </select>
+            </label>
+
+            <!-- EXAM TYPE -->
+            <label *ngIf="newDoc.type === 'PAPER'">
+              Exam type
+
+              <select [(ngModel)]="newDoc.examType">
+
+                <option value="">Select exam</option>
+                <option value="CIE 1">CIE 1</option>
+                <option value="CIE 2">CIE 2</option>
+                <option value="CIE 3">CIE 3</option>
+                <option value="SEE">SEE</option>
+                <option value="SUPPLEMENTARY">Supplementary Exam</option>
+
+              </select>
+            </label>
+
+            <!-- ACADEMIC YEAR -->
+            <label *ngIf="newDoc.type === 'PAPER'">
+              Exam year
+
+              <input
+                [(ngModel)]="newDoc.academicYear"
+                type="text"
+                maxlength="4"
+                inputmode="numeric"
+                placeholder="e.g. 2025">
+            </label>
+
+            <label>
+              PDF file
+
+              <input
+                type="file"
+                accept="application/pdf,.pdf"
+                (change)="onFile($event)">
+            </label>
+
+            <button
+              class="primary-btn"
+              [disabled]="
+                !newDoc.subjectId ||
+                !newDoc.title ||
+                !file ||
+                (newDoc.type === 'RESOURCE' && !newDoc.moduleNumber) ||
+                (newDoc.type === 'PAPER' &&
+                  (!newDoc.examType || !newDoc.academicYear))
+              "
+              (click)="upload()">
+              Upload PDF ↑
+            </button>
+
+          </div>
+
+        </div>
+
+      </ng-container>
+
+    </div>
+
+  </main>
+
+</div>
