@@ -94,6 +94,7 @@ public class ClaimDisputeController {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Dispute not found"));
         items.lockById(dispute.claim.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        entityManager.refresh(dispute);
         if (!"OPEN".equals(dispute.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Dispute already resolved");
         }
