@@ -18,3 +18,54 @@
 .staff-claim input{margin:8px}
 
 .staff-inventory{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:18px 0}.inventory-entry{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:#fff!important;color:#17203a!important;border:1px solid #d9e1ef!important;border-radius:12px;padding:15px!important;text-align:left;cursor:pointer}.inventory-entry:hover{border-color:#6366f1!important}.staff-evidence{max-width:260px;max-height:220px;object-fit:contain;display:block;margin:12px 0}.admin-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:20px}.admin-stats-grid>div{border:1px solid #e5e7eb;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px}.admin-stats-grid strong{font-size:25px;color:#4338ca}.admin-stats-grid span{font-size:12px;overflow-wrap:anywhere}.lf-photo-gallery{display:flex;flex-wrap:wrap;gap:12px}.lf-photo-gallery img{width:180px;height:150px;object-fit:contain;border-radius:10px;background:#eef2ff}
+
+
+/* Campus Connect 2.0 — refined product dashboard */
+:root{--cc-ink:#18233e;--cc-violet:#6758ef;--cc-border:#e9ecf5;--cc-shadow:0 14px 46px #202e590b}
+body{background:#f6f7fc;color:var(--cc-ink);-webkit-font-smoothing:antialiased}
+.shell{background:#f6f7fc}
+.sidebar{background:#ffffffeb;backdrop-filter:blur(18px);border-right:1px solid #e7ebf5;padding:30px 17px;box-shadow:3px 0 35px #2d355005}
+.brand{font-size:23px;letter-spacing:-1.2px;margin-bottom:51px}
+.brand-icon{background:linear-gradient(135deg,#6154e8,#8e77ff);box-shadow:0 8px 20px #635bff2d;border-radius:13px}
+.sidebar>button{font-weight:700;color:#77819a;transition:background .18s,color .18s,transform .18s;border-radius:11px;padding:14px 16px}
+.sidebar>button:hover{transform:translateX(3px);background:#f1f0ff;color:#5145d6}
+.sidebar>button.active{background:linear-gradient(95deg,#eeecff,#f6f5ff);color:#5847d7;box-shadow:inset 3px 0 #7566f7}
+.help{border:1px solid #e7e4ff;background:linear-gradient(140deg,#f0efff,#faf9ff);border-radius:17px;padding:20px}
+.topbar{background:#ffffffd9;backdrop-filter:blur(14px);border-bottom:1px solid #e9ecf5;position:sticky;top:0;z-index:5}
+.content{padding-top:42px}
+.hero{background:linear-gradient(115deg,#273469,#5044bd 63%,#7963e7);border-radius:26px;box-shadow:0 23px 54px #443cb12c;min-height:315px;padding:52px 55px}
+.hero:after{content:"";position:absolute;right:-80px;top:-170px;width:430px;height:430px;border:1px solid #ffffff25;border-radius:50%;box-shadow:0 0 0 48px #ffffff07,0 0 0 105px #ffffff05;pointer-events:none}
+.hero h1{font-size:clamp(34px,3.6vw,49px);line-height:1.13;letter-spacing:-2.1px}
+.hero h1 em{color:#d7d2ff}
+.hero p{font-size:14px;max-width:470px}
+.white-btn{border-radius:12px;padding:15px 20px;box-shadow:0 8px 22px #151c5430;transition:transform .2s}
+.white-btn:hover{transform:translateY(-2px)}
+.stat,.panel,.feature,.lf-card{border:1px solid #e9edf5;border-radius:19px;box-shadow:var(--cc-shadow);background:#fff}
+.stat{padding:23px;transition:transform .2s,box-shadow .2s}
+.stat:hover,.feature:hover,.lf-card:hover{transform:translateY(-4px);box-shadow:0 20px 46px #222e5915}
+.stat strong{font-size:27px;letter-spacing:-1px}
+.stat-icon{border-radius:15px;width:51px;height:51px}
+.feature{border-radius:20px;overflow:hidden}
+.feature-visual{height:145px}
+.feature-body{padding:25px}
+.feature h3{font-size:18px;letter-spacing:-.5px}
+.page-heading h1{font-size:clamp(29px,3vw,38px);letter-spacing:-1.5px}
+.page-heading p{font-size:14px}
+.panel{padding:27px}
+.primary-btn{background:linear-gradient(115deg,#5c50e5,#8070ff);border-radius:11px;box-shadow:0 7px 17px #6256e32a;transition:transform .2s,box-shadow .2s}
+.primary-btn:hover:not(:disabled){background:linear-gradient(115deg,#4e42d2,#7462f3);transform:translateY(-2px);box-shadow:0 12px 23px #6256e33d}
+.outline-btn{border:1px solid #dfdcfc;border-radius:10px;padding:11px 15px;transition:background .2s}
+.outline-btn:hover{background:#f3f1ff}
+input,select,textarea{border-radius:11px;background:#fcfdff;padding:13px 14px;transition:border-color .2s,box-shadow .2s}
+input:focus,select:focus,textarea:focus{border-color:#7469f1;box-shadow:0 0 0 4px #7668ed16}
+.lf-card{border-radius:19px;transition:transform .2s,box-shadow .2s}
+.lf-card-art{background:linear-gradient(125deg,#e8e9ff,#f3f8ff);height:155px}
+.lf-card-body{padding:22px}
+.lf-filters button{font-weight:700;transition:all .2s}
+.lf-filters button.active{background:linear-gradient(120deg,#5e52e8,#8170ff);border-color:transparent;box-shadow:0 6px 16px #6155e82a}
+.admin-stats-grid>div{background:linear-gradient(135deg,#f7f6ff,#fff);border-radius:16px;padding:22px}
+.admin-stats-grid strong{font-size:30px;letter-spacing:-1px}
+.mini-list>div{align-items:center;flex-wrap:wrap}
+.mini-list .delete-btn{margin-left:auto}
+@media(max-width:760px){.sidebar{box-shadow:none}.topbar{position:relative}.hero{border-radius:20px;padding:32px 25px;min-height:260px}.hero h1{font-size:32px}.content{padding-top:22px}.stat{padding:15px}.panel{padding:20px}.lf-card-art{height:125px}}
+@media(prefers-reduced-motion:reduce){.sidebar>button,.stat,.feature,.lf-card,.primary-btn,.white-btn{transition:none!important}}
