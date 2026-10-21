@@ -23,12 +23,18 @@ import { ApiService } from './api.service';
           <label for="item-id">Item ID</label>
           <input id="item-id" type="number" min="1" [(ngModel)]="itemId" />
           <button (click)="loadClaims()" [disabled]="!itemId || busy">Load claims</button>
+          <div class="portal-form">
+            <label>Physical storage location <input [(ngModel)]="storageLocation" placeholder="Desk cabinet A-1"></label>
+            <button (click)="intake()" [disabled]="!itemId || !storageLocation.trim() || busy">Receive item into custody</button>
+          </div>
           <p *ngIf="error" class="role-login-error">{{ error }}</p>
           <p *ngIf="notice">{{ notice }}</p>
           <div *ngFor="let claim of claims" class="staff-claim">
             <strong>Claim #{{ claim.id }} — {{ claim.status }}</strong>
             <p>Claimant: {{ claim.claimantEmail }}</p>
             <p>Ownership details: {{ claim.ownershipAnswer }}</p>
+            <button (click)="viewEvidence(claim.id)">View private evidence photo</button>
+            <img *ngIf="evidenceUrls[claim.id]" [src]="evidenceUrls[claim.id]" alt="Private ownership evidence" class="staff-evidence">
             <div *ngIf="claim.status === 'PENDING'">
               <button (click)="review(claim, true)" [disabled]="busy">Approve</button>
               <button (click)="review(claim, false)" [disabled]="busy">Reject</button>
@@ -68,6 +74,8 @@ export class RolePortalComponent implements OnInit {
   newAdmin = { name: '', email: '', password: '' };
   claims: any[] = [];
   itemId: number | null = null;
+  storageLocation = '';
+  evidenceUrls: Record<number, string> = {};
   busy = false;
   notice = '';
   error = '';
@@ -106,6 +114,32 @@ export class RolePortalComponent implements OnInit {
     this.api.delete('/super-admin/admins/' + admin.id).subscribe({
       next: () => { this.busy = false; this.notice = 'Administrator role revoked.'; this.reloadAdmins(); },
       error: () => { this.busy = false; this.error = 'Unable to revoke administrator role.'; }
+    });
+  }
+  intake(): void {
+    if (!this.itemId || !this.storageLocation.trim()) return;
+    this.busy = true;
+    this.error = '';
+    this.api.put('/staff/items/' + this.itemId + '/intake', {
+      storageLocation: this.storageLocation.trim()
+    }).subscribe({
+      next: () => { this.busy = false; this.notice = 'Item received into custody.'; },
+      error: () => { this.busy = false; this.error = 'Could not receive item. It may already be in custody.'; }
+    });
+  }
+  viewEvidence(claimId: number): void {
+    this.api.get('/claims/' + claimId + '/evidence').subscribe({
+      next: (images: any[]) => {
+        if (!images.length) { this.notice = 'No proof photo submitted.'; return; }
+        this.api.getImage(images[0].id).subscribe({
+          next: blob => {
+            if (this.evidenceUrls[claimId]) URL.revokeObjectURL(this.evidenceUrls[claimId]);
+            this.evidenceUrls[claimId] = URL.createObjectURL(blob);
+          },
+          error: () => this.error = 'Unable to open evidence.'
+        });
+      },
+      error: () => this.error = 'Unable to load evidence.'
     });
   }
   loadClaims(): void {
