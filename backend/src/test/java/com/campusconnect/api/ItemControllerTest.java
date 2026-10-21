@@ -17,6 +17,20 @@ class ItemControllerTest {
             new UsernamePasswordAuthenticationToken("student@bmsce.ac.in", "unused");
 
     @Test
+    void publicListingDoesNotExposeStaffStorageLocation() {
+        LostItem item = new LostItem();
+        item.id = 1L;
+        item.title = "Wallet";
+        item.custodyLocation = "Secure locker 3";
+        when(repository.findAll()).thenReturn(java.util.List.of(item));
+        var publicItems = controller.all();
+        assertEquals(1, publicItems.size());
+        assertEquals("Wallet", publicItems.get(0).title());
+        assertFalse(java.util.Arrays.stream(ItemController.PublicItem.class.getRecordComponents())
+                .anyMatch(component -> component.getName().equals("custodyLocation")));
+    }
+
+    @Test
     void cannotSpoofPosterOrStatus() {
         when(repository.save(any(LostItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
         var result = controller.create(
