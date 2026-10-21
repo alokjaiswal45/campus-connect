@@ -214,6 +214,11 @@ public class SecurityConfig {
                         .requestMatchers("/api/super-admin/**")
                         .hasRole("SUPER_ADMIN")
 
+                        // Ownership claims and appeals are reserved for student accounts.
+                        .requestMatchers(HttpMethod.POST, "/api/items/*/claims",
+                                "/api/claims/*/disputes", "/api/claims/*/evidence")
+                        .hasRole("STUDENT")
+
                         // Lost-and-found desk operations.
                         .requestMatchers("/api/staff/**")
                         .hasAnyRole("STAFF", "ADMIN", "SUPER_ADMIN")
