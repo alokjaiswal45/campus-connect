@@ -3,6 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Router } from '@angular/router';
+import { destination } from './portal-routing';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -267,7 +269,8 @@ export class AppComponent implements OnInit {
 
   constructor(
     public api: ApiService,
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {}
 
   // ==========================================
@@ -285,6 +288,10 @@ export class AppComponent implements OnInit {
 
     this.api.get('/auth/me').subscribe({
       next: (user: any) => {
+        if (this.router.url.startsWith('/student/') && user.role !== 'STUDENT') {
+          this.router.navigateByUrl(destination(user.role));
+          return;
+        }
         this.user = user;
         this.email = user.email || '';
         this.page = user.role === 'ADMIN' ? 'admin' : 'dashboard';
@@ -370,7 +377,13 @@ export class AppComponent implements OnInit {
     this.api.get('/auth/me').subscribe({
 
       next: (user: any) => {
-
+        if (this.router.url.startsWith('/student/') && user.role !== 'STUDENT') {
+          sessionStorage.removeItem('cc_auth');
+          this.loading = false;
+          this.password = '';
+          this.error = 'Only student accounts can sign in here. Use the Teacher, Staff or Admin portal for your role.';
+          return;
+        }
         this.user = user;
         this.email = normalizedEmail;
         this.password = '';
