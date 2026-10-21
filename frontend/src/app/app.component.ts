@@ -41,6 +41,46 @@ export class AppComponent implements OnInit {
   subjects: any[] = [];
   docs: any[] = [];
   items: any[] = [];
+  lostFilter: 'ALL' | 'LOST' | 'FOUND' | 'UNRESOLVED' = 'ALL';
+  selectedItem: any = null;
+  claimAnswer = '';
+  myClaims: any[] = [];
+
+  get visibleItems(): any[] {
+    return this.items.filter(i => this.lostFilter === 'ALL' ||
+      (this.lostFilter === 'UNRESOLVED' ? i.status === 'OPEN' : i.kind === this.lostFilter))
+      .slice().reverse();
+  }
+
+  openItem(item: any): void { this.selectedItem = item; this.claimAnswer = ''; }
+
+  submitClaim(): void {
+    if (!this.selectedItem || this.claimAnswer.trim().length < 10) {
+      this.error = 'Describe at least 10 characters of private ownership evidence.';
+      return;
+    }
+    this.error = '';
+    this.api.post('/items/' + this.selectedItem.id + '/claims', {
+      ownershipAnswer: this.claimAnswer.trim()
+    }).subscribe({
+      next: () => {
+        this.notice = 'Claim submitted privately for staff review.';
+        this.selectedItem = null;
+        this.claimAnswer = '';
+        this.loadMyClaims();
+      },
+      error: (err: any) => this.error = this.errorMessage(err, 'Unable to submit claim.')
+    });
+  }
+
+  loadMyClaims(): void {
+    if (!this.user) return;
+    this.api.get('/claims/mine').subscribe({
+      next: (claims: any[]) => this.myClaims = claims,
+      error: () => this.error = 'Unable to load your claim history.'
+    });
+  }
+
 
   // Existing filters
   branchId = '';
@@ -118,6 +158,7 @@ export class AppComponent implements OnInit {
         this.email = user.email || '';
         this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
+        this.loadMyClaims();
       },
 
       error: () => {
