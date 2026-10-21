@@ -24,6 +24,59 @@ class ClaimDisputeControllerTest {
             new UsernamePasswordAuthenticationToken("owner@bmsce.ac.in", "unused");
 
     @Test
+    void upheldRejectedDisputeReopensClaimWithoutGrantingCustody() {
+        LostItem item = new LostItem();
+        item.id = 3L;
+        item.status = "OPEN";
+        ItemClaim claim = new ItemClaim();
+        claim.id = 4L;
+        claim.item = item;
+        claim.status = "REJECTED";
+        claim.reviewedBy = "desk@bmsce.ac.in";
+        claim.pickupReference = "OLD12345";
+        ClaimDispute dispute = new ClaimDispute();
+        dispute.id = 2L;
+        dispute.status = "OPEN";
+        dispute.openedBy = "owner@bmsce.ac.in";
+        dispute.claim = claim;
+        when(disputes.findById(2L)).thenReturn(Optional.of(dispute));
+        when(items.lockById(3L)).thenReturn(Optional.of(item));
+        when(disputes.save(dispute)).thenReturn(dispute);
+        var admin = new UsernamePasswordAuthenticationToken("admin@bmsce.ac.in", "unused");
+        var result = controller.resolve(2L, new ClaimDisputeController.ResolveRequest(
+                "Appeal accepted; independent staff re-review required", true), admin);
+        assertEquals("UPHELD", result.status());
+        assertEquals("PENDING", claim.status);
+        assertNull(claim.pickupReference);
+        assertNull(claim.reviewedBy);
+        verify(claims).save(claim);
+        assertEquals("OPEN", item.status);
+    }
+
+    @Test
+    void upheldRejectedDisputeCannotOverrideAnotherApprovedClaim() {
+        LostItem item = new LostItem();
+        item.id = 3L;
+        item.status = "OPEN";
+        ItemClaim claim = new ItemClaim();
+        claim.item = item;
+        claim.status = "REJECTED";
+        ClaimDispute dispute = new ClaimDispute();
+        dispute.status = "OPEN";
+        dispute.openedBy = "owner@bmsce.ac.in";
+        dispute.claim = claim;
+        when(disputes.findById(2L)).thenReturn(Optional.of(dispute));
+        when(items.lockById(3L)).thenReturn(Optional.of(item));
+        when(claims.existsByItemIdAndStatusIn(eq(3L), anyList())).thenReturn(true);
+        var admin = new UsernamePasswordAuthenticationToken("admin@bmsce.ac.in", "unused");
+        assertThrows(ResponseStatusException.class, () ->
+                controller.resolve(2L, new ClaimDisputeController.ResolveRequest(
+                        "Appeal accepted but ownership already assigned", true), admin));
+        verify(claims, never()).save(any());
+        verify(disputes, never()).save(any());
+    }
+
+    @Test
     void cannotOpenDisputeAfterCompletedHandover() {
         LostItem item = new LostItem();
         item.id = 3L;
