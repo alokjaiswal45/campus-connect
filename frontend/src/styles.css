@@ -69,3 +69,61 @@ input:focus,select:focus,textarea:focus{border-color:#7469f1;box-shadow:0 0 0 4p
 .mini-list .delete-btn{margin-left:auto}
 @media(max-width:760px){.sidebar{box-shadow:none}.topbar{position:relative}.hero{border-radius:20px;padding:32px 25px;min-height:260px}.hero h1{font-size:32px}.content{padding-top:22px}.stat{padding:15px}.panel{padding:20px}.lf-card-art{height:125px}}
 @media(prefers-reduced-motion:reduce){.sidebar>button,.stat,.feature,.lf-card,.primary-btn,.white-btn{transition:none!important}}
+
+
+/* Administration workspace — dedicated people directory */
+.admin-section-nav{display:flex;gap:9px;flex-wrap:wrap;margin:25px 0 28px;padding:7px;background:#fff;border:1px solid #e7eaf4;border-radius:16px;box-shadow:0 7px 26px #24305408}
+.admin-section-nav button{flex:1;min-width:145px;border:0;background:transparent;border-radius:11px;padding:14px 16px;font-size:12px;font-weight:800;color:#78829b;transition:background .18s,color .18s}
+.admin-section-nav button:hover{background:#f4f3ff;color:#5148cb}
+.admin-section-nav button.active{background:linear-gradient(115deg,#6255e9,#8573ff);color:white;box-shadow:0 7px 18px #6657ec35}
+.admin-overview-intro h2,.admin-people-heading h2{font-size:25px;letter-spacing:-.9px;margin:0}
+.admin-overview-intro p,.admin-people-heading p{color:#8490a6;font-size:13px;line-height:1.8;margin:8px 0 0}
+.admin-overview-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;margin-top:22px}
+.admin-overview-grid button{display:flex;flex-direction:column;align-items:flex-start;text-align:left;gap:14px;padding:28px;border:1px solid #e8ebf4;background:white;border-radius:20px;box-shadow:0 12px 35px #2430550a;transition:transform .2s,box-shadow .2s}
+.admin-overview-grid button:hover{transform:translateY(-4px);box-shadow:0 18px 38px #24305515}
+.admin-overview-grid button>span{font-size:27px;display:grid;place-items:center;background:#eeecff;color:#5d52df;border-radius:14px;width:54px;height:54px}
+.admin-overview-grid strong{font-size:17px;letter-spacing:-.5px;color:#263250}
+.admin-overview-grid small{font-size:12px;color:#8290a6;line-height:1.8;min-height:65px}
+.admin-overview-grid b{font-size:12px;color:#5d52dd}
+.admin-people-heading{display:flex;align-items:center;justify-content:space-between;gap:20px;margin:0 0 24px}
+.admin-people-heading .eyebrow{margin-bottom:9px}
+.admin-people-heading .primary-btn{white-space:nowrap}
+.admin-people-metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;margin-bottom:23px}
+.admin-people-metrics button{display:flex;align-items:center;gap:16px;text-align:left;padding:23px;border:1px solid #e8ebf4;border-radius:18px;background:#fff;box-shadow:0 8px 28px #2633570a;transition:transform .2s,border-color .2s,box-shadow .2s;flex-wrap:wrap}
+.admin-people-metrics button:hover{transform:translateY(-2px)}
+.admin-people-metrics button.selected{border-color:#9488ff;box-shadow:0 0 0 3px #7165ef13,0 14px 35px #2730570d}
+.admin-people-metrics .metric-symbol{display:grid;place-items:center;width:49px;height:49px;background:#f0efff;border-radius:14px;font-size:24px}
+.admin-people-metrics strong{font-size:29px;letter-spacing:-1px;color:#253153}
+.admin-people-metrics small{font-size:12px;font-weight:700;color:#7b87a0}
+.admin-employee-form{margin-bottom:24px;background:linear-gradient(145deg,#fff,#fafaff)}
+.admin-employee-form .section-heading{margin:0 0 18px}
+.admin-employee-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px 20px}
+.admin-employee-fields label{font-size:12px;font-weight:700}
+.admin-form-actions{grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:12px;padding-top:8px}
+.admin-directory{padding:0;overflow:hidden}
+.admin-directory-toolbar{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:26px 27px;border-bottom:1px solid #edf0f6}
+.admin-directory-toolbar h2{font-size:19px;letter-spacing:-.5px;margin:0}
+.admin-directory-toolbar p{font-size:12px;color:#8994a9;margin:6px 0 0}
+.admin-directory-actions{display:flex;align-items:center;gap:10px}
+.admin-directory-actions input{min-width:235px;margin:0}
+.admin-table-scroll{overflow-x:auto}
+.admin-people-table{width:100%;border-collapse:collapse;text-align:left;min-width:690px}
+.admin-people-table th{font-size:10px;text-transform:uppercase;letter-spacing:1.3px;color:#9aa4b8;background:#fafbff;padding:17px 27px;border-bottom:1px solid #edf0f6}
+.admin-people-table td{padding:19px 27px;border-bottom:1px solid #f0f2f7;font-size:12px}
+.admin-people-table tr:hover td{background:#fbfbff}
+.admin-person{display:flex;align-items:center;gap:13px;min-width:210px}
+.admin-person-avatar{width:43px;height:43px;border-radius:13px;display:grid;place-items:center;background:linear-gradient(135deg,#eeecff,#e7efff);color:#6253dc;font-weight:800;font-size:16px;flex-shrink:0}
+.admin-person strong{display:block;font-size:13px;color:#25314d}
+.admin-person small{display:block;font-size:11px;color:#919db1;margin-top:5px;overflow-wrap:anywhere}
+.admin-role-tag{background:#f0efff;color:#6657da;border-radius:20px;padding:7px 11px;font-weight:800;font-size:10px;white-space:nowrap}
+.admin-account-status{display:inline-flex;align-items:center;gap:7px;background:#e9f8f0;color:#208b60;padding:7px 11px;border-radius:20px;font-size:10px;font-weight:800}
+.admin-account-status:before{content:"";width:6px;height:6px;background:#26b47b;border-radius:50%}
+.admin-account-status.inactive{background:#fff0ef;color:#bf655b}
+.admin-account-status.inactive:before{background:#d56a60}
+.admin-terminate{border:1px solid #f4d3d3;color:#c45454;background:#fff6f6;padding:10px 13px;border-radius:10px;font-size:11px;font-weight:800;white-space:nowrap}
+.admin-terminate:hover:not(:disabled){background:#ffe8e8}
+.admin-no-action{color:#adb5c5}
+.admin-directory-empty{text-align:center;color:#8c97ab;padding:36px!important}
+.admin-directory-footnote{font-size:11px;color:#8c97ab;line-height:1.7;margin:0;padding:17px 27px}
+@media(max-width:950px){.admin-overview-grid{grid-template-columns:1fr}.admin-overview-grid small{min-height:0}.admin-people-metrics button{padding:16px;gap:8px}.admin-directory-toolbar{flex-wrap:wrap}.admin-directory-actions{width:100%}.admin-directory-actions input{flex:1}}
+@media(max-width:650px){.admin-section-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.admin-section-nav button{min-width:0;padding:13px 7px}.admin-people-heading{align-items:flex-start;flex-direction:column}.admin-people-metrics{gap:8px}.admin-people-metrics button{flex-direction:column;align-items:flex-start;padding:13px}.admin-people-metrics .metric-symbol{width:38px;height:38px;font-size:18px}.admin-people-metrics strong{font-size:23px}.admin-people-metrics small{font-size:10px}.admin-employee-fields{grid-template-columns:1fr}.admin-directory-toolbar{padding:19px}.admin-directory-actions{flex-wrap:wrap}.admin-directory-actions input{min-width:0;width:100%}}
