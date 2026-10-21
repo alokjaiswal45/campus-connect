@@ -637,8 +637,8 @@
           <div *ngIf="user && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
             <h3>Claim this item</h3>
             <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
-            <label>Optional private proof photo (JPEG, PNG or WebP, max 5 MB)
-              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseEvidencePhoto($event)">
+            <label>Optional private proof photo (JPEG or PNG, max 5 MB)
+              <input type="file" accept="image/jpeg,image/png" (change)="chooseEvidencePhoto($event)">
             </label>
             <textarea [(ngModel)]="claimAnswer" maxlength="2000" placeholder="Describe identifying details only the owner would know"></textarea>
             <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10">Submit private claim</button>
@@ -655,8 +655,8 @@
             <label>Category <input [(ngModel)]="newItem.category" maxlength="100" placeholder="Electronics"></label>
             <label>Location <input [(ngModel)]="newItem.location" maxlength="255" placeholder="Library, second floor"></label>
             <label>Description <textarea [(ngModel)]="newItem.description" maxlength="3000" placeholder="Describe the item"></textarea></label>
-            <label>Optional item photograph (JPEG, PNG or WebP, max 5 MB)
-              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseReportPhoto($event)">
+            <label>Optional item photograph (JPEG or PNG, max 5 MB)
+              <input type="file" accept="image/jpeg,image/png" (change)="chooseReportPhoto($event)">
             </label>
             <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim()">Post report →</button>
           </ng-container>
