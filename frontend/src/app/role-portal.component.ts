@@ -46,7 +46,15 @@ import { ApiService } from './api.service';
           <h2>Administrator accounts</h2>
           <p>Existing administrator accounts: {{ admins.length }}</p>
           <p *ngIf="error">{{ error }}</p>
-          <ul><li *ngFor="let admin of admins">{{ admin.name }} — {{ admin.email }}</li></ul>
+          <form (ngSubmit)="createAdmin()" class="portal-form">
+            <label>Full name <input name="adminName" [(ngModel)]="newAdmin.name" required></label>
+            <label>College email <input name="adminEmail" type="email" [(ngModel)]="newAdmin.email" required></label>
+            <label>Temporary password <input name="adminPassword" type="password" [(ngModel)]="newAdmin.password" minlength="12" required></label>
+            <button type="submit" [disabled]="busy || newAdmin.password.length < 12">Create administrator</button>
+          </form>
+          <ul><li *ngFor="let admin of admins">{{ admin.name }} — {{ admin.email }}
+            <button (click)="revokeAdmin(admin)" [disabled]="busy">Revoke admin role</button>
+          </li></ul>
         </article>
       </section>
     </main>
@@ -57,6 +65,7 @@ export class RolePortalComponent implements OnInit {
   label = this.section === 'staff' ? 'Staff' : 'Super Admin';
   user: any;
   admins: any[] = [];
+  newAdmin = { name: '', email: '', password: '' };
   claims: any[] = [];
   itemId: number | null = null;
   busy = false;
@@ -71,6 +80,33 @@ export class RolePortalComponent implements OnInit {
         error: () => this.error = 'Could not load administrator accounts.'
       });
     }
+  }
+  reloadAdmins(): void {
+    this.api.get('/super-admin/admins').subscribe({
+      next: admins => this.admins = admins,
+      error: () => this.error = 'Unable to load administrator accounts.'
+    });
+  }
+  createAdmin(): void {
+    this.busy = true;
+    this.error = '';
+    this.api.post('/super-admin/admins', this.newAdmin).subscribe({
+      next: () => {
+        this.busy = false;
+        this.newAdmin = { name: '', email: '', password: '' };
+        this.notice = 'Administrator created.';
+        this.reloadAdmins();
+      },
+      error: () => { this.busy = false; this.error = 'Unable to create administrator.'; }
+    });
+  }
+  revokeAdmin(admin: any): void {
+    if (!confirm('Revoke administrator privileges for ' + admin.email + '?')) return;
+    this.busy = true;
+    this.api.delete('/super-admin/admins/' + admin.id).subscribe({
+      next: () => { this.busy = false; this.notice = 'Administrator role revoked.'; this.reloadAdmins(); },
+      error: () => { this.busy = false; this.error = 'Unable to revoke administrator role.'; }
+    });
   }
   loadClaims(): void {
     if (!this.itemId) return;
