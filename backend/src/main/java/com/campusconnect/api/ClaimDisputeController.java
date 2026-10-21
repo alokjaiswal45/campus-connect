@@ -102,6 +102,10 @@ public class ClaimDisputeController {
         if (!"OPEN".equals(dispute.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Dispute already resolved");
         }
+        if (!"OPEN".equals(dispute.claim.item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Item already resolved; ownership appeal cannot alter completed handover");
+        }
         if (auth.getName().equalsIgnoreCase(dispute.openedBy)
                 || auth.getName().equalsIgnoreCase(dispute.claim.reviewedBy)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Independent administrator review required");
