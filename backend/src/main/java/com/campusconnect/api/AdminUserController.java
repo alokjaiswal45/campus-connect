@@ -6,6 +6,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Pattern;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -17,10 +19,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class AdminUserController {
     private final UserRepository users;
     private final PasswordEncoder encoder;
+    private final String domain;
 
-    public AdminUserController(UserRepository users, PasswordEncoder encoder) {
+    public AdminUserController(UserRepository users, PasswordEncoder encoder,
+            @Value("${app.allowed-email-domain:bmsce.ac.in}") String domain) {
         this.users = users;
         this.encoder = encoder;
+        this.domain = domain.trim().toLowerCase(Locale.ROOT).replaceFirst("^@", "");
     }
 
     public record CreateStaffRequest(String name, String email, String password) {}
@@ -46,7 +51,7 @@ public class AdminUserController {
                     "Name, college email, and password of at least 12 characters required");
         }
         String email = request.email().trim().toLowerCase(Locale.ROOT);
-        if (!email.matches("^[a-z0-9._%+-]+@bmsce\\.ac\\.in$")) {
+        if (!email.matches("^[a-z0-9._%+-]+@" + Pattern.quote(domain) + "$")) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "A valid BMSCE email is required");
         }
