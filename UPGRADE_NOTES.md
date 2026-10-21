@@ -43,3 +43,7 @@ When an independent administrator upholds a rejected claim, the backend returns 
 ## Competing appeals and final handover
 
 Staff cannot complete handover while **any** ownership appeal for the item is OPEN, including appeals from other claimants. Claim evidence uploads refresh claim state after locking the item to avoid accepting evidence after a concurrent review. Resolve all open appeals independently before releasing physical custody.
+
+## Item closure and claim approval safeguards
+
+An item poster cannot close an item while ownership claims remain PENDING or APPROVED, or while any appeal is OPEN. Staff also cannot approve a claim while an appeal for any claimant on the same item remains OPEN. These checks occur under the item row lock to prevent bypass through simultaneous requests.
