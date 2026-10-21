@@ -7,6 +7,7 @@ import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.ItemImageRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.util.List;
+import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -68,9 +69,10 @@ public class ItemImageController {
     }
 
     @PostMapping(value = "/items/{itemId}/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
     public ImageView uploadItem(@PathVariable Long itemId, @RequestPart("file") MultipartFile file,
             Authentication auth) throws java.io.IOException {
-        LostItem item = items.findById(itemId).orElseThrow(() ->
+        LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (!auth.getName().equalsIgnoreCase(item.postedBy) && !desk(auth)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
@@ -90,6 +92,7 @@ public class ItemImageController {
     }
 
     @PostMapping(value = "/claims/{claimId}/evidence", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @Transactional
     public ImageView uploadEvidence(@PathVariable Long claimId, @RequestPart("file") MultipartFile file,
             Authentication auth) throws java.io.IOException {
         ItemClaim claim = claims.findById(claimId).orElseThrow(() ->
@@ -97,6 +100,8 @@ public class ItemImageController {
         if (!auth.getName().equalsIgnoreCase(claim.claimantEmail)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
+        items.lockById(claim.item.id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND));
         if (!"PENDING".equals(claim.status)) throw new ResponseStatusException(HttpStatus.CONFLICT);
         if (!images.findByClaimIdOrderByCreatedAtAsc(claimId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Only one evidence image allowed");
