@@ -40,9 +40,14 @@ public class ItemClaimController {
         }
     }
 
-    private boolean desk(Authentication auth) {
-        return auth.getAuthorities().stream().anyMatch(a ->
-                List.of("ROLE_STAFF", "ROLE_ADMIN", "ROLE_SUPER_ADMIN").contains(a.getAuthority()));
+    private ItemClaim lockClaimItemThenRead(Long id) {
+        ItemClaim existing = claims.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
+        items.lockById(existing.item.id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        // Refresh after acquiring the item lock to see the latest committed claim state.
+        return claims.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
     }
 
     @PostMapping("/items/{itemId}/claims")
@@ -55,7 +60,7 @@ public class ItemClaimController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Provide ownership details (10-2000 characters)");
         }
-        LostItem item = items.findById(itemId).orElseThrow(() ->
+        LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
         if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item is not available for claims");
@@ -90,8 +95,7 @@ public class ItemClaimController {
     @Transactional
     public ClaimView review(@PathVariable Long id, @RequestBody ReviewRequest request,
             Authentication auth) {
-        ItemClaim claim = claims.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
+        ItemClaim claim = lockClaimItemThenRead(id);
         if (!"PENDING".equals(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Claim already reviewed");
         }
