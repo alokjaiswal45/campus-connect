@@ -116,7 +116,7 @@ export class AppComponent implements OnInit {
       next: (user: any) => {
         this.user = user;
         this.email = user.email || '';
-        this.page = 'dashboard';
+        this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
       },
 
@@ -127,7 +127,7 @@ export class AppComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    return this.user?.role === 'ADMIN';
+    return this.user?.role === 'ADMIN' || this.user?.role === 'SUPER_ADMIN';
   }
 
   // ==========================================
