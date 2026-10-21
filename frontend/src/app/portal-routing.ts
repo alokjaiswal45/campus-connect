@@ -35,6 +35,7 @@ export const roleGuard: CanActivateFn = route => {
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'student/login' },
+  { path: 'student/onboarding', component: AppComponent },
   ...(['student', 'staff', 'admin', 'super-admin'] as const).flatMap(section => {
     const role = section.replace('-', '_').toUpperCase();
     return [
