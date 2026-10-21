@@ -154,8 +154,8 @@ export class RolePortalComponent implements OnInit {
     });
   }
   loadItems(): void {
-    this.api.get('/items').subscribe({
-      next: (items: any[]) => this.inventory = items.filter(i => i.kind === 'FOUND'),
+    this.api.get('/staff/items/inventory').subscribe({
+      next: (items: any[]) => this.inventory = items,
       error: () => this.error = 'Unable to load inventory.'
     });
   }
