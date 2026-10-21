@@ -35,4 +35,4 @@ jobs:
           java-version: '21'
           cache: maven
           cache-dependency-path: backend/pom.xml
-      - run: mvn -B -DskipTests package
+      - run: mvn -B test package
