@@ -20,8 +20,19 @@ public class ItemController {
     public record ItemRequest(String title, String description, String location,
             String category, String kind) {}
 
+    public record PublicItem(Long id, String title, String description,
+            String location, String category, String kind, String status,
+            String postedBy, Instant createdAt) {
+        static PublicItem from(LostItem item) {
+            return new PublicItem(item.id, item.title, item.description, item.location,
+                    item.category, item.kind, item.status, item.postedBy, item.createdAt);
+        }
+    }
+
     @GetMapping
-    public List<LostItem> all() { return repo.findAll(); }
+    public List<PublicItem> all() {
+        return repo.findAll().stream().map(PublicItem::from).toList();
+    }
 
     @PostMapping
     public ResponseEntity<LostItem> create(@RequestBody ItemRequest request, Authentication auth) {
