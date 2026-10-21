@@ -77,6 +77,29 @@ class ClaimDisputeControllerTest {
     }
 
     @Test
+    void cannotResolveAppealAfterCompletedHandover() {
+        LostItem item = new LostItem();
+        item.id = 3L;
+        item.status = "RESOLVED";
+        ItemClaim claim = new ItemClaim();
+        claim.item = item;
+        claim.status = "REJECTED";
+        ClaimDispute dispute = new ClaimDispute();
+        dispute.status = "OPEN";
+        dispute.claim = claim;
+        dispute.openedBy = "owner@bmsce.ac.in";
+        when(disputes.findById(2L)).thenReturn(Optional.of(dispute));
+        when(items.lockById(3L)).thenReturn(Optional.of(item));
+        var admin = new UsernamePasswordAuthenticationToken("admin@bmsce.ac.in", "unused");
+        ResponseStatusException failure = assertThrows(ResponseStatusException.class, () ->
+                controller.resolve(2L, new ClaimDisputeController.ResolveRequest(
+                        "Appeal considered after handover", true), admin));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, failure.getStatusCode());
+        verify(disputes, never()).save(any());
+        verify(claims, never()).save(any());
+    }
+
+    @Test
     void cannotOpenDisputeAfterCompletedHandover() {
         LostItem item = new LostItem();
         item.id = 3L;
