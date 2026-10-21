@@ -156,8 +156,9 @@ public class ItemClaimController {
         if (!"OPEN".equals(claim.item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item is no longer open");
         }
-        if (request.approve() && disputes.existsByClaimIdAndStatus(id, "OPEN")) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resolve the open dispute first");
+        if (request.approve() && disputes.existsOpenForItem(claim.item.id, "OPEN")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Resolve all open ownership disputes for this item before approval");
         }
         if (request.approve() && claim.item.custodyAcceptedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
