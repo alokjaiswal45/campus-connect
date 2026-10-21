@@ -132,6 +132,10 @@ export class ApiService {
     );
   }
 
+  uploadDocument(form: FormData): Observable<any> {
+    return this.http.post<any>(this.base + '/documents', form, { headers: this.getHeaders() });
+  }
+
   uploadImage(path: string, file: File): Observable<any> {
     const form = new FormData();
     form.append('file', file);
