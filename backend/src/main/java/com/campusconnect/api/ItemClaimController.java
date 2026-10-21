@@ -77,7 +77,7 @@ public class ItemClaimController {
 
     @PutMapping("/staff/items/{itemId}/intake")
     @Transactional
-    public LostItem intake(@PathVariable Long itemId, @RequestBody IntakeRequest request,
+    public StaffItemView intake(@PathVariable Long itemId, @RequestBody IntakeRequest request,
             Authentication auth) {
         LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
@@ -94,7 +94,7 @@ public class ItemClaimController {
         item.custodyAcceptedAt = Instant.now();
         item.custodyAcceptedBy = auth.getName();
         item.custodyLocation = request.storageLocation().trim();
-        return items.save(item);
+        return StaffItemView.from(items.save(item));
     }
 
     @PostMapping("/items/{itemId}/claims")
