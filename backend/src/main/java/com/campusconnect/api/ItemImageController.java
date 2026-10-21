@@ -12,6 +12,7 @@ import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import jakarta.persistence.EntityManager;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -24,11 +25,13 @@ public class ItemImageController {
     private final ItemImageRepository images;
     private final LostItemRepository items;
     private final ItemClaimRepository claims;
+    private final EntityManager entityManager;
     public ItemImageController(ItemImageRepository images, LostItemRepository items,
-            ItemClaimRepository claims) {
+            ItemClaimRepository claims, EntityManager entityManager) {
         this.images = images;
         this.items = items;
         this.claims = claims;
+        this.entityManager = entityManager;
     }
 
     public record ImageView(Long id, Long itemId, Long claimId) {}
@@ -131,6 +134,7 @@ public class ItemImageController {
         }
         items.lockById(claim.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND));
+        entityManager.refresh(claim);
         if (!"OPEN".equals(claim.item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already resolved");
         }
