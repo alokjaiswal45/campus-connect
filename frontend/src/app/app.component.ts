@@ -44,6 +44,36 @@ export class AppComponent implements OnInit {
   lostFilter: 'ALL' | 'LOST' | 'FOUND' | 'UNRESOLVED' = 'ALL';
   selectedItem: any = null;
   claimAnswer = '';
+  reportPhoto: File | null = null;
+  evidencePhoto: File | null = null;
+  itemPhotoUrls: string[] = [];
+  private revokeItemPhotos(): void {
+    this.itemPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+    this.itemPhotoUrls = [];
+  }
+  chooseReportPhoto(event: Event): void {
+    this.reportPhoto = (event.target as HTMLInputElement).files?.[0] || null;
+  }
+  chooseEvidencePhoto(event: Event): void {
+    this.evidencePhoto = (event.target as HTMLInputElement).files?.[0] || null;
+  }
+  private uploadPhoto(path: string, file: File, message: string): void {
+    this.api.uploadImage(path, file).subscribe({
+      next: () => this.notice = message,
+      error: () => this.error = 'Report saved, but image upload failed. Use JPEG, PNG or WebP under 5 MB.'
+    });
+  }
+  private loadItemPhotos(id: number): void {
+    this.revokeItemPhotos();
+    this.api.get('/items/' + id + '/images').subscribe({
+      next: (photos: any[]) => photos.forEach(photo => this.api.getImage(photo.id).subscribe({
+        next: blob => {
+          if (this.selectedItem?.id === id) this.itemPhotoUrls.push(URL.createObjectURL(blob));
+        }
+      }))
+    });
+  }
+
   myClaims: any[] = [];
 
   get visibleItems(): any[] {
@@ -52,7 +82,12 @@ export class AppComponent implements OnInit {
       .slice().reverse();
   }
 
-  openItem(item: any): void { this.selectedItem = item; this.claimAnswer = ''; }
+  openItem(item: any): void {
+    this.selectedItem = item;
+    this.claimAnswer = '';
+    this.loadItemPhotos(item.id);
+  }
+  closeItem(): void { this.selectedItem = null; this.revokeItemPhotos(); }
 
   submitClaim(): void {
     if (!this.selectedItem || this.claimAnswer.trim().length < 10) {
@@ -63,9 +98,14 @@ export class AppComponent implements OnInit {
     this.api.post('/items/' + this.selectedItem.id + '/claims', {
       ownershipAnswer: this.claimAnswer.trim()
     }).subscribe({
-      next: () => {
+      next: (claim: any) => {
         this.notice = 'Claim submitted privately for staff review.';
-        this.selectedItem = null;
+        if (this.evidencePhoto) {
+          this.uploadPhoto('/claims/' + claim.id + '/evidence', this.evidencePhoto,
+            'Claim and private evidence image submitted.');
+        }
+        this.evidencePhoto = null;
+        this.closeItem();
         this.claimAnswer = '';
         this.loadMyClaims();
       },
@@ -1110,9 +1150,14 @@ export class AppComponent implements OnInit {
 
     this.api.post('/items', this.newItem).subscribe({
 
-      next: () => {
+      next: (item: any) => {
 
         this.notice = 'Item posted successfully.';
+        if (this.reportPhoto) {
+          this.uploadPhoto('/items/' + item.id + '/images', this.reportPhoto,
+            'Item and photograph posted successfully.');
+          this.reportPhoto = null;
+        }
 
         this.newItem = {
           title: '',
