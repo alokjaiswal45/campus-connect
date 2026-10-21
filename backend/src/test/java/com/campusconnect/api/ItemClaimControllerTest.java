@@ -17,7 +17,8 @@ class ItemClaimControllerTest {
     private final ItemClaimRepository claims = mock(ItemClaimRepository.class);
     private final LostItemRepository items = mock(LostItemRepository.class);
     private final EntityManager em = mock(EntityManager.class);
-    private final ItemClaimController controller = new ItemClaimController(claims, items, em, mock(ClaimDisputeRepository.class));
+    private final ClaimDisputeRepository disputes = mock(ClaimDisputeRepository.class);
+    private final ItemClaimController controller = new ItemClaimController(claims, items, em, disputes);
     private final UsernamePasswordAuthenticationToken staff =
             new UsernamePasswordAuthenticationToken("desk@bmsce.ac.in", "unused");
 
@@ -66,6 +67,27 @@ class ItemClaimControllerTest {
                 controller.claim(10L, new ItemClaimController.ClaimRequest(
                         "My wallet has a blue card inside"), owner));
         verify(claims, never()).save(any());
+    }
+
+    @Test
+    void competingOwnershipAppealBlocksHandover() {
+        LostItem item = new LostItem();
+        item.id = 10L;
+        item.status = "OPEN";
+        item.custodyAcceptedAt = java.time.Instant.now();
+        ItemClaim claim = new ItemClaim();
+        claim.id = 20L;
+        claim.item = item;
+        claim.status = "APPROVED";
+        claim.pickupReference = "ABC12345";
+        when(claims.findById(20L)).thenReturn(Optional.of(claim));
+        when(items.lockById(10L)).thenReturn(Optional.of(item));
+        when(disputes.existsOpenForItem(10L, "OPEN")).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () ->
+                controller.handover(20L,
+                        new ItemClaimController.HandoverRequest("ABC12345", true), staff));
+        verify(claims, never()).save(any());
+        verify(items, never()).save(any());
     }
 
     @Test
