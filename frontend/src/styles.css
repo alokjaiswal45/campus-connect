@@ -16,3 +16,5 @@
 .lf-claims article{padding:12px 0;border-top:1px solid #e1e6f0}
 .staff-claim{padding:16px 0;border-top:1px solid #e1e6f0}
 .staff-claim input{margin:8px}
+
+.staff-inventory{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:12px;margin:18px 0}.inventory-entry{display:flex;flex-direction:column;align-items:flex-start;gap:6px;background:#fff!important;color:#17203a!important;border:1px solid #d9e1ef!important;border-radius:12px;padding:15px!important;text-align:left;cursor:pointer}.inventory-entry:hover{border-color:#6366f1!important}.staff-evidence{max-width:260px;max-height:220px;object-fit:contain;display:block;margin:12px 0}.admin-stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:12px;margin-top:20px}.admin-stats-grid>div{border:1px solid #e5e7eb;border-radius:12px;padding:18px;display:flex;flex-direction:column;gap:8px}.admin-stats-grid strong{font-size:25px;color:#4338ca}.admin-stats-grid span{font-size:12px;overflow-wrap:anywhere}.lf-photo-gallery{display:flex;flex-wrap:wrap;gap:12px}.lf-photo-gallery img{width:180px;height:150px;object-fit:contain;border-radius:10px;background:#eef2ff}
