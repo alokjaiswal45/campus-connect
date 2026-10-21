@@ -611,7 +611,10 @@
 
         <div class="lf-grid">
           <article class="lf-card" *ngFor="let i of visibleItems">
-            <div class="lf-card-art" aria-hidden="true">{{ i.category === 'Electronics' ? '📱' : i.category === 'Books' ? '📚' : i.category === 'Keys' ? '🔑' : '🎒' }}</div>
+            <div class="lf-card-art" [class.has-photo]="!!cardPhotoUrls[i.id]">
+              <img *ngIf="cardPhotoUrls[i.id]" [src]="cardPhotoUrls[i.id]" [alt]="'Photo of ' + i.title" class="lf-card-photo" loading="lazy">
+              <span *ngIf="!cardPhotoUrls[i.id]" aria-hidden="true">{{ i.category === 'Electronics' ? '📱' : i.category === 'Books' ? '📚' : i.category === 'Keys' ? '🔑' : '🎒' }}</span>
+            </div>
             <div class="lf-card-body">
               <div class="item-head"><span class="pill" [class.found]="i.kind === 'FOUND'">{{ i.kind }}</span>
                 <span class="muted">{{ i.status }}</span></div>
