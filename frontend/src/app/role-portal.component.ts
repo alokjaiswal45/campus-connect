@@ -100,7 +100,9 @@ import { ApiService } from './api.service';
             <div class="teacher-library-filters">
               <label>Search <input [(ngModel)]="resourceSearch" placeholder="Search title, subject or branch"></label>
               <label>Category <select [(ngModel)]="resourceType"><option value="ALL">All materials</option><option value="RESOURCE">Study resources</option><option value="PAPER">Question papers</option></select></label>
-              <label>Subject <select [(ngModel)]="resourceSubject"><option value="ALL">All subjects</option><option *ngFor="let s of subjects" [value]="s.id">{{ s.branch?.code }} · Sem {{ s.semester }} · {{ s.name }}</option></select></label>
+              <label>Branch <select [(ngModel)]="resourceBranch" (ngModelChange)="resourceSubject = 'ALL'"><option value="ALL">All branches</option><option *ngFor="let b of branches" [value]="b.id">{{ b.code }} · {{ b.name }}</option></select></label>
+              <label>Semester <select [(ngModel)]="resourceSemester" (ngModelChange)="resourceSubject = 'ALL'"><option value="ALL">All semesters</option><option *ngFor="let sem of [1,2,3,4,5,6,7,8]" [value]="sem">Semester {{ sem }}</option></select></label>
+              <label>Subject <select [(ngModel)]="resourceSubject"><option value="ALL">All subjects</option><option *ngFor="let s of filteredTeacherSubjects" [value]="s.id">{{ s.branch?.code }} · Sem {{ s.semester }} · {{ s.name }}</option></select></label>
               <button type="button" (click)="loadTeacherLibrary()">↻ Refresh library</button>
             </div>
             <div class="teacher-resource-list"><article *ngFor="let doc of filteredDocuments" class="teacher-resource-card"><div class="teacher-resource-symbol">▤</div><div class="teacher-resource-details"><strong>{{ doc.title }}</strong><small>{{ doc.subject?.branch?.code }} · Semester {{ doc.subject?.semester }} · {{ doc.subject?.name }}</small><span>{{ doc.type === 'PAPER' ? 'Question paper · ' + (doc.examType || '') + ' ' + (doc.academicYear || '') : 'Study resource · Module ' + (doc.moduleNumber || '—') }}</span></div><button type="button" (click)="openDocument(doc)">View PDF ↗</button></article></div>
@@ -129,6 +131,14 @@ export class RolePortalComponent implements OnInit {
   label = this.section === 'staff' ? 'Staff' : 'Teacher';
   user: any;
   subjects: any[] = [];
+  branches: any[] = [];
+  resourceBranch = 'ALL';
+  resourceSemester = 'ALL';
+  get filteredTeacherSubjects(): any[] {
+    return this.subjects.filter(s =>
+      (this.resourceBranch === 'ALL' || String(s.branch?.id) === this.resourceBranch) &&
+      (this.resourceSemester === 'ALL' || String(s.semester) === this.resourceSemester));
+  }
   teacherTab: 'browse' | 'upload' = 'browse';
   resourceSearch = '';
   resourceType: 'ALL' | 'RESOURCE' | 'PAPER' = 'ALL';
@@ -137,12 +147,15 @@ export class RolePortalComponent implements OnInit {
     const q = this.resourceSearch.trim().toLowerCase();
     return this.documents.filter(doc =>
       (this.resourceType === 'ALL' || doc.type === this.resourceType) &&
+      (this.resourceBranch === 'ALL' || String(doc.subject?.branch?.id) === this.resourceBranch) &&
+      (this.resourceSemester === 'ALL' || String(doc.subject?.semester) === this.resourceSemester) &&
       (this.resourceSubject === 'ALL' || String(doc.subject?.id) === this.resourceSubject) &&
       (!q || [doc.title, doc.subject?.name, doc.subject?.code, doc.subject?.branch?.name, doc.subject?.branch?.code]
         .some(v => String(v || '').toLowerCase().includes(q)))
     );
   }
   loadTeacherLibrary(): void {
+    this.api.get('/branches').subscribe({ next: branches => this.branches = branches, error: () => this.error = 'Could not load branches.' });
     this.api.get('/subjects').subscribe({ next: subjects => this.subjects = subjects, error: () => this.error = 'Could not load subjects.' });
     this.api.get('/documents').subscribe({ next: documents => this.documents = documents, error: () => this.error = 'Could not load documents.' });
   }
