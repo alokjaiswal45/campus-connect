@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.io.ByteArrayInputStream;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -59,12 +60,37 @@ public class ItemImageController {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
                     "Invalid image or image dimensions too large");
         }
+        // Re-encode to strip EXIF/metadata and avoid serving attacker-controlled payload bytes.
+        String format = "image/png".equals(detectedType) ? "png" : "jpeg";
+        BufferedImage safeImage = decoded;
+        if ("jpeg".equals(format) && decoded.getColorModel().hasAlpha()) {
+            safeImage = new BufferedImage(decoded.getWidth(), decoded.getHeight(),
+                    BufferedImage.TYPE_INT_RGB);
+            java.awt.Graphics2D graphics = safeImage.createGraphics();
+            try {
+                graphics.setColor(java.awt.Color.WHITE);
+                graphics.fillRect(0, 0, decoded.getWidth(), decoded.getHeight());
+                graphics.drawImage(decoded, 0, 0, null);
+            } finally {
+                graphics.dispose();
+            }
+        }
+        ByteArrayOutputStream sanitized = new ByteArrayOutputStream();
+        if (!ImageIO.write(safeImage, format, sanitized)) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Unable to sanitize image");
+        }
+        byte[] safeBytes = sanitized.toByteArray();
+        if (safeBytes.length > 5 * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Sanitized image exceeds 5 MB");
+        }
         ItemImage image = new ItemImage();
         image.item = item;
         image.claim = claim;
         image.uploadedBy = auth.getName();
         image.contentType = detectedType;
-        image.data = bytes;
+        image.data = safeBytes;
         return images.save(image);
     }
 
