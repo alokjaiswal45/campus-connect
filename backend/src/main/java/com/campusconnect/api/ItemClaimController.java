@@ -48,6 +48,15 @@ public class ItemClaimController {
         }
     }
 
+    // Desk staff must not receive the expected pickup code through API responses.
+    // The claimant obtains it from their own authenticated student account.
+    private static ClaimView staffView(ItemClaim claim) {
+        ClaimView view = ClaimView.from(claim, true);
+        return new ClaimView(view.id(), view.itemId(), view.claimantEmail(),
+                view.ownershipAnswer(), view.status(), view.createdAt(),
+                null, view.handedOverAt());
+    }
+
     private ItemClaim lockClaimItemThenRead(Long id) {
         ItemClaim existing = claims.findById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
@@ -135,7 +144,7 @@ public class ItemClaimController {
     @GetMapping("/staff/items/{itemId}/claims")
     public List<ClaimView> forItem(@PathVariable Long itemId) {
         return claims.findByItemIdOrderByCreatedAtDesc(itemId)
-                .stream().map(c -> ClaimView.from(c, true)).toList();
+                .stream().map(ItemClaimController::staffView).toList();
     }
 
     @PutMapping("/staff/claims/{id}/review")
@@ -174,7 +183,7 @@ public class ItemClaimController {
         if (request.approve()) {
             claim.pickupReference = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         }
-        return ClaimView.from(claims.save(claim), true);
+        return staffView(claims.save(claim));
     }
 
     @PutMapping("/staff/claims/{id}/handover")
@@ -209,6 +218,6 @@ public class ItemClaimController {
         claim.handedOverBy = auth.getName();
         claim.item.status = "RESOLVED";
         items.save(claim.item);
-        return ClaimView.from(claims.save(claim), true);
+        return staffView(claims.save(claim));
     }
 }
