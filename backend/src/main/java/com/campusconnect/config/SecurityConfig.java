@@ -39,6 +39,9 @@ public class SecurityConfig {
     @Value("${app.allowed-email-domain:bmsce.ac.in}")
     private String allowedEmailDomain;
 
+    @Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:4201}")
+    private String corsAllowedOrigins;
+
     // ======================================
     // PASSWORD ENCODER
     // ======================================
@@ -257,10 +260,10 @@ public class SecurityConfig {
         // Only these Angular origins are allowed
         // to read cross-origin API responses.
         config.setAllowedOrigins(
-                List.of(
-                        "http://localhost:4200",
-                        "http://localhost:4201"
-                )
+                java.util.Arrays.stream(corsAllowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isEmpty())
+                        .toList()
         );
 
         config.setAllowedMethods(
