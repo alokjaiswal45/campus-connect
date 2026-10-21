@@ -142,6 +142,26 @@ export class AppComponent implements OnInit {
   selectedLibraryYear = '';
 
   // Admin forms
+  newStaff = { name: '', email: '', password: '' };
+  campusUsers: any[] = [];
+  createStaff(): void {
+    this.error = '';
+    this.api.post('/admin/users/staff', this.newStaff).subscribe({
+      next: () => {
+        this.notice = 'Staff account created.';
+        this.newStaff = { name: '', email: '', password: '' };
+        this.loadCampusUsers();
+      },
+      error: (err: any) => this.error = this.errorMessage(err, 'Unable to create staff account.')
+    });
+  }
+  loadCampusUsers(): void {
+    this.api.get('/admin/users').subscribe({
+      next: users => this.campusUsers = users,
+      error: () => this.error = 'Unable to load campus users.'
+    });
+  }
+
   newBranch = {
     code: '',
     name: ''
@@ -199,6 +219,7 @@ export class AppComponent implements OnInit {
         this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
         this.loadMyClaims();
+        if (this.isAdmin) this.loadCampusUsers();
       },
 
       error: () => {
