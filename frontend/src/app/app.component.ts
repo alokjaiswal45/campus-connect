@@ -48,6 +48,33 @@ export class AppComponent implements OnInit {
   reportPhoto: File | null = null;
   evidencePhoto: File | null = null;
   itemPhotoUrls: string[] = [];
+  cardPhotoUrls: Record<number, string> = {};
+  private cardPhotoVersion = 0;
+  private clearCardPhotos(): void {
+    this.cardPhotoVersion++;
+    Object.values(this.cardPhotoUrls).forEach(url => URL.revokeObjectURL(url));
+    this.cardPhotoUrls = {};
+  }
+  private loadCardPhotos(items: any[]): void {
+    this.clearCardPhotos();
+    const version = this.cardPhotoVersion;
+    items.forEach(item => {
+      this.api.get('/items/' + item.id + '/images').subscribe({
+        next: (photos: any[]) => {
+          if (version !== this.cardPhotoVersion || !photos?.length) return;
+          this.api.getImage(photos[0].id).subscribe({
+            next: blob => {
+              if (version !== this.cardPhotoVersion) return;
+              const url = URL.createObjectURL(blob);
+              if (this.cardPhotoUrls[item.id]) URL.revokeObjectURL(this.cardPhotoUrls[item.id]);
+              this.cardPhotoUrls[item.id] = url;
+            }
+          });
+        }
+      });
+    });
+  }
+
   private revokeItemPhotos(): void {
     this.itemPhotoUrls.forEach(url => URL.revokeObjectURL(url));
     this.itemPhotoUrls = [];
@@ -593,6 +620,8 @@ export class AppComponent implements OnInit {
     this.subjects = [];
     this.docs = [];
     this.items = [];
+    this.clearCardPhotos();
+    this.revokeItemPhotos();
 
     this.password = '';
     this.otp = '';
@@ -960,6 +989,7 @@ export class AppComponent implements OnInit {
         this.items = Array.isArray(response)
           ? response
           : [];
+        this.loadCardPhotos(this.items);
       },
 
       error: () => {
