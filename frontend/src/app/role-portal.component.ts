@@ -19,7 +19,16 @@ import { ApiService } from './api.service';
       <section class="role-portal-grid">
         <article *ngIf="section === 'staff'">
           <h2>Lost &amp; Found desk</h2>
-          <p>Enter an item ID to review private ownership claims and record verified handovers.</p>
+          <p>Browse reports, receive found items and review private ownership claims.</p>
+          <button (click)="loadItems()">Refresh inventory</button>
+          <div class="staff-inventory">
+            <button *ngFor="let item of inventory" class="inventory-entry" (click)="selectItem(item)">
+              <strong>{{ item.title }}</strong>
+              <span>{{ item.kind }} · {{ item.status }}</span>
+              <small>{{ item.location || 'Location not specified' }}</small>
+              <small *ngIf="item.custodyAcceptedAt">In custody: {{ item.custodyLocation }}</small>
+            </button>
+          </div>
           <label for="item-id">Item ID</label>
           <input id="item-id" type="number" min="1" [(ngModel)]="itemId" />
           <button (click)="loadClaims()" [disabled]="!itemId || busy">Load claims</button>
@@ -73,6 +82,7 @@ export class RolePortalComponent implements OnInit {
   admins: any[] = [];
   newAdmin = { name: '', email: '', password: '' };
   claims: any[] = [];
+  inventory: any[] = [];
   itemId: number | null = null;
   storageLocation = '';
   evidenceUrls: Record<number, string> = {};
@@ -82,6 +92,7 @@ export class RolePortalComponent implements OnInit {
   constructor(private route: ActivatedRoute, private router: Router, private api: ApiService) {}
   ngOnInit(): void {
     this.api.get('/auth/me').subscribe({ next: user => this.user = user });
+    if (this.section === 'staff') this.loadItems();
     if (this.section === 'super-admin') {
       this.api.get('/super-admin/admins').subscribe({
         next: data => this.admins = data,
@@ -123,7 +134,7 @@ export class RolePortalComponent implements OnInit {
     this.api.put('/staff/items/' + this.itemId + '/intake', {
       storageLocation: this.storageLocation.trim()
     }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Item received into custody.'; },
+      next: () => { this.busy = false; this.notice = 'Item received into custody.'; this.loadItems(); },
       error: () => { this.busy = false; this.error = 'Could not receive item. It may already be in custody.'; }
     });
   }
@@ -141,6 +152,17 @@ export class RolePortalComponent implements OnInit {
       },
       error: () => this.error = 'Unable to load evidence.'
     });
+  }
+  loadItems(): void {
+    this.api.get('/items').subscribe({
+      next: (items: any[]) => this.inventory = items.filter(i => i.kind === 'FOUND'),
+      error: () => this.error = 'Unable to load inventory.'
+    });
+  }
+  selectItem(item: any): void {
+    this.itemId = item.id;
+    this.storageLocation = item.custodyLocation || '';
+    this.loadClaims();
   }
   loadClaims(): void {
     if (!this.itemId) return;
@@ -170,7 +192,7 @@ export class RolePortalComponent implements OnInit {
       pickupReference: claim.enteredReference,
       collegeIdChecked: claim.collegeIdChecked
     }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Handover recorded.'; this.loadClaims(); },
+      next: () => { this.busy = false; this.notice = 'Handover recorded.'; this.loadClaims(); this.loadItems(); },
       error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Handover failed.'; }
     });
   }
