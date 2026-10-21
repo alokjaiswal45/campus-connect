@@ -22,6 +22,22 @@ class ItemClaimControllerTest {
             new UsernamePasswordAuthenticationToken("desk@bmsce.ac.in", "unused");
 
     @Test
+    void inventoryOnlyReturnsFoundItemsAndRetainsStaffCustodyDetails() {
+        LostItem found = new LostItem();
+        found.id = 1L;
+        found.kind = "FOUND";
+        found.custodyLocation = "Staff locker A";
+        LostItem lost = new LostItem();
+        lost.id = 2L;
+        lost.kind = "LOST";
+        when(items.findAll()).thenReturn(java.util.List.of(found, lost));
+        var inventory = controller.inventory();
+        assertEquals(1, inventory.size());
+        assertEquals(1L, inventory.get(0).id());
+        assertEquals("Staff locker A", inventory.get(0).custodyLocation());
+    }
+
+    @Test
     void staffCannotApproveBeforePhysicalIntake() {
         LostItem item = new LostItem();
         item.id = 10L;
