@@ -99,6 +99,9 @@ public class ItemClaimController {
                 || auth.getName().equalsIgnoreCase(claim.item.postedBy)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Self-approval is prohibited");
         }
+        if (request == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Review decision required");
+        }
         if (request.approve() && claims.existsByItemIdAndStatusIn(
                 claim.item.id, List.of("APPROVED", "HANDED_OVER"))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already assigned");
