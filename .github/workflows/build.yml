@@ -36,3 +36,31 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
       - run: mvn -B test package
+
+  mysql-migrations:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: testroot
+          MYSQL_DATABASE: campus_connect_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ptestroot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare legacy table
+        run: |
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test -e 'CREATE TABLE lost_item (id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY, title VARCHAR(255) NOT NULL);'
+      - name: Apply additive migrations
+        run: |
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/001_role_portals_lost_found.sql
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/002_claim_disputes.sql
+      - name: Verify migration schema
+        run: |
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test -e 'SHOW COLUMNS FROM lost_item LIKE "custody_accepted_at"; SHOW TABLES LIKE "item_claims"; SHOW TABLES LIKE "item_images"; SHOW TABLES LIKE "claim_disputes";'
