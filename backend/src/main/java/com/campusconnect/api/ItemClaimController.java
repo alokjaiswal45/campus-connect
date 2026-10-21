@@ -136,6 +136,12 @@ public class ItemClaimController {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Review decision required");
         }
+        if (!"OPEN".equals(claim.item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item is no longer open");
+        }
+        if (request.approve() && disputes.existsByClaimIdAndStatus(id, "OPEN")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resolve the open dispute first");
+        }
         if (request.approve() && claim.item.custodyAcceptedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Staff must physically receive the item before approval");
@@ -158,6 +164,9 @@ public class ItemClaimController {
     public ClaimView handover(@PathVariable Long id, @RequestBody HandoverRequest request,
             Authentication auth) {
         ItemClaim claim = lockClaimItemThenRead(id);
+        if (!"OPEN".equals(claim.item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already resolved");
+        }
         if (claim.item.custodyAcceptedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item not in staff custody");
         }
