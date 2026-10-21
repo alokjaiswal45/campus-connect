@@ -144,6 +144,13 @@ export class AppComponent implements OnInit {
   // Admin forms
   newStaff = { name: '', email: '', password: '' };
   campusUsers: any[] = [];
+  adminStats: Record<string, number> = {};
+  loadAdminStats(): void {
+    this.api.get('/admin/analytics').subscribe({
+      next: stats => this.adminStats = stats,
+      error: () => this.error = 'Unable to load campus analytics.'
+    });
+  }
   createStaff(): void {
     this.error = '';
     this.api.post('/admin/users/staff', this.newStaff).subscribe({
@@ -219,7 +226,7 @@ export class AppComponent implements OnInit {
         this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
         this.loadMyClaims();
-        if (this.isAdmin) this.loadCampusUsers();
+        if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); }
       },
 
       error: () => {
