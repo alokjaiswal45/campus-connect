@@ -17,45 +17,76 @@ import { ApiService } from './api.service';
         <p *ngIf="section === 'teacher'">Bring learning materials together. Upload course notes, modules and exam papers.</p>
       </section>
       <section class="role-portal-grid">
-        <article *ngIf="section === 'staff'">
-          <h2>Lost &amp; Found desk</h2>
-          <p>Browse reports, receive found items and review private ownership claims.</p>
-          <button (click)="loadItems()">Refresh inventory</button>
+        <article *ngIf="section === 'staff'" class="staff-workspace">
+          <div class="portal-section-head"><span class="portal-icon">◇</span><div><h2>Lost &amp; Found operations</h2><p>Review every report, receive found property, verify claims, and record safe handovers.</p></div></div>
+          <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
+          <div class="staff-dashboard-kpis">
+            <div><strong>{{ inventory.length }}</strong><span>All reports</span></div>
+            <div><strong>{{ countItems('LOST') }}</strong><span>Lost reports</span></div>
+            <div><strong>{{ countItems('FOUND') }}</strong><span>Found reports</span></div>
+            <div><strong>{{ countInCustody() }}</strong><span>In custody</span></div>
+          </div>
+          <div class="staff-toolbar">
+            <nav class="staff-filter-tabs" aria-label="Report filter">
+              <button type="button" [class.selected]="staffFilter === 'ALL'" (click)="staffFilter = 'ALL'">All reports</button>
+              <button type="button" [class.selected]="staffFilter === 'LOST'" (click)="staffFilter = 'LOST'">Lost</button>
+              <button type="button" [class.selected]="staffFilter === 'FOUND'" (click)="staffFilter = 'FOUND'">Found</button>
+            </nav>
+            <input aria-label="Search reported items" [(ngModel)]="staffSearch" placeholder="Search item, description, location">
+            <button type="button" (click)="loadItems()">↻ Refresh</button>
+          </div>
           <div class="staff-inventory">
-            <button *ngFor="let item of inventory" class="inventory-entry" (click)="selectItem(item)">
+            <button type="button" *ngFor="let item of filteredInventory" class="inventory-entry" [class.selected]="item.id === itemId" (click)="selectItem(item)">
+              <span class="staff-item-kind" [class.is-lost]="item.kind === 'LOST'">{{ item.kind }}</span>
               <strong>{{ item.title }}</strong>
-              <span>{{ item.kind }} · {{ item.status }}</span>
-              <small>{{ item.location || 'Location not specified' }}</small>
-              <small *ngIf="item.custodyAcceptedAt">In custody: {{ item.custodyLocation }}</small>
+              <small>{{ item.description }}</small>
+              <span class="staff-item-meta">{{ item.location || 'Location not specified' }} · {{ item.status }}</span>
+              <span class="staff-custody-tag" *ngIf="item.custodyAcceptedAt">✓ In custody: {{ item.custodyLocation }}</span>
             </button>
           </div>
-          <label for="item-id">Item ID</label>
-          <input id="item-id" type="number" min="1" [(ngModel)]="itemId" />
-          <button (click)="loadClaims()" [disabled]="!itemId || busy">Load claims</button>
-          <div class="portal-form">
-            <label>Physical storage location <input [(ngModel)]="storageLocation" placeholder="Desk cabinet A-1"></label>
-            <button (click)="intake()" [disabled]="!itemId || !storageLocation.trim() || busy">Receive item into custody</button>
-          </div>
-          <p *ngIf="error" class="role-login-error">{{ error }}</p>
-          <p *ngIf="notice">{{ notice }}</p>
-          <div *ngFor="let claim of claims" class="staff-claim">
-            <strong>Claim #{{ claim.id }} — {{ claim.status }}</strong>
-            <p>Claimant: {{ claim.claimantEmail }}</p>
-            <p>Ownership details: {{ claim.ownershipAnswer }}</p>
-            <button (click)="viewEvidence(claim.id)">View private evidence photo</button>
-            <img *ngIf="evidenceUrls[claim.id]" [src]="evidenceUrls[claim.id]" alt="Private ownership evidence" class="staff-evidence">
-            <div *ngIf="claim.status === 'PENDING'">
-              <button (click)="review(claim, true)" [disabled]="busy">Approve</button>
-              <button (click)="review(claim, false)" [disabled]="busy">Reject</button>
-            </div>
-            <div *ngIf="claim.status === 'APPROVED'">
-              <p>Pickup reference: {{ claim.pickupReference }}</p>
-              <label>Reference presented by student</label>
-              <input [(ngModel)]="claim.enteredReference" />
-              <label><input type="checkbox" [(ngModel)]="claim.collegeIdChecked" /> College ID checked in person</label>
-              <button (click)="handover(claim)" [disabled]="busy || !claim.collegeIdChecked">Confirm handover</button>
-            </div>
-          </div>
+          <p *ngIf="filteredInventory.length === 0" class="teacher-library-empty">No reports match this filter.</p>
+          <section *ngIf="selectedStaffItem as selected" class="staff-case-panel">
+            <div class="portal-section-head"><span class="portal-icon">⌘</span><div><h2>{{ selected.title }} <small>#{{ selected.id }}</small></h2><p>{{ selected.kind }} report · {{ selected.status }} · Reported by {{ selected.postedBy }}</p></div></div>
+            <p>{{ selected.description }}</p>
+            <p><strong>Reported location:</strong> {{ selected.location || 'Not specified' }}</p>
+            <ng-container *ngIf="selected.kind === 'LOST'">
+              <p class="staff-info-note">This is a LOST report. You can review it, but physical intake and claimant handover apply only to FOUND items.</p>
+            </ng-container>
+            <ng-container *ngIf="selected.kind === 'FOUND'">
+              <div *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt" class="staff-intake-form">
+                <h3>1. Receive item into custody</h3>
+                <p>Confirm the item is physically present and record its exact secure storage location.</p>
+                <label>Storage location <input [(ngModel)]="storageLocation" maxlength="255" placeholder="e.g. Lost & Found desk · Locked cabinet A1"></label>
+                <button type="button" [disabled]="busy || !storageLocation.trim()" (click)="intake()">Confirm physical intake</button>
+              </div>
+              <div *ngIf="selected.custodyAcceptedAt" class="staff-custody-confirmed">
+                <strong>✓ Item in custody</strong>
+                <span>Stored at {{ selected.custodyLocation }} · Received by {{ selected.custodyAcceptedBy }}</span>
+              </div>
+              <h3>2. Verify ownership claims</h3>
+              <p>Review the claimant's private description and evidence before approval. An item must be in custody before approval.</p>
+              <button type="button" (click)="loadClaims()" [disabled]="busy">↻ Refresh claims</button>
+              <p *ngIf="claims.length === 0" class="staff-info-note">No claims submitted for this item.</p>
+              <div *ngFor="let claim of claims" class="staff-claim">
+                <div class="staff-claim-head"><strong>Claim #{{ claim.id }}</strong><span>{{ claim.status }}</span></div>
+                <p><strong>Claimant:</strong> {{ claim.claimantEmail }}</p>
+                <p><strong>Ownership details:</strong> {{ claim.ownershipAnswer }}</p>
+                <button type="button" (click)="viewEvidence(claim.id)">View private evidence</button>
+                <img *ngIf="evidenceUrls[claim.id]" [src]="evidenceUrls[claim.id]" alt="Private ownership evidence" class="staff-evidence">
+                <div *ngIf="claim.status === 'PENDING'" class="staff-review-actions">
+                  <button type="button" (click)="review(claim, true)" [disabled]="busy || !selected.custodyAcceptedAt">Approve verified claim</button>
+                  <button type="button" (click)="review(claim, false)" [disabled]="busy">Reject claim</button>
+                </div>
+                <div *ngIf="claim.status === 'APPROVED'" class="staff-handover">
+                  <h3>3. Authenticate claimant and hand over</h3>
+                  <p>Match the claimant to their physical college ID and verify the pickup reference provided by the claimant. Do not release the item until both checks pass.</p>
+                  <label>Pickup reference supplied by claimant <input [(ngModel)]="claim.enteredReference" autocomplete="off" placeholder="Enter reference presented by student"></label>
+                  <label class="staff-id-check"><input type="checkbox" [(ngModel)]="claim.collegeIdChecked"> I physically checked the claimant's college ID and identity</label>
+                  <button type="button" (click)="handover(claim)" [disabled]="busy || !claim.collegeIdChecked || !claim.enteredReference?.trim()">Confirm authenticated handover</button>
+                </div>
+              </div>
+            </ng-container>
+          </section>
         </article>
         <article *ngIf="section === 'teacher'" class="teacher-workspace">
           <nav class="teacher-tabs" aria-label="Teacher academic workspace">
@@ -127,6 +158,16 @@ export class RolePortalComponent implements OnInit {
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
   inventory: any[] = [];
+  staffFilter: 'ALL' | 'LOST' | 'FOUND' = 'ALL';
+  staffSearch = '';
+  get filteredInventory(): any[] {
+    const q = this.staffSearch.trim().toLowerCase();
+    return this.inventory.filter(i => (this.staffFilter === 'ALL' || i.kind === this.staffFilter) &&
+      (!q || [i.title, i.description, i.location, i.category].some(v => String(v || '').toLowerCase().includes(q))));
+  }
+  get selectedStaffItem(): any { return this.inventory.find(i => i.id === this.itemId) || null; }
+  countItems(kind: string): number { return this.inventory.filter(i => i.kind === kind).length; }
+  countInCustody(): number { return this.inventory.filter(i => i.custodyAcceptedAt && i.status === 'OPEN').length; }
   itemId: number | null = null;
   storageLocation = '';
   evidenceUrls: Record<number, string> = {};
@@ -159,7 +200,7 @@ export class RolePortalComponent implements OnInit {
     });
   }
   intake(): void {
-    if (!this.itemId || !this.storageLocation.trim()) return;
+    if (!this.itemId || this.selectedStaffItem?.kind !== 'FOUND' || !this.storageLocation.trim()) return;
     this.busy = true;
     this.error = '';
     this.api.put('/staff/items/' + this.itemId + '/intake', {
@@ -193,10 +234,11 @@ export class RolePortalComponent implements OnInit {
   selectItem(item: any): void {
     this.itemId = item.id;
     this.storageLocation = item.custodyLocation || '';
-    this.loadClaims();
+    this.claims = [];
+    if (item.kind === 'FOUND') this.loadClaims();
   }
   loadClaims(): void {
-    if (!this.itemId) return;
+    if (!this.itemId || this.selectedStaffItem?.kind !== 'FOUND') return;
     this.error = '';
     this.notice = '';
     this.api.get('/staff/items/' + this.itemId + '/claims').subscribe({
