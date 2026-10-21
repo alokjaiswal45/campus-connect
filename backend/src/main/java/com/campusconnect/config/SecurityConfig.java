@@ -94,7 +94,7 @@ public class SecurityConfig {
                     );
 
             // Only verified accounts can authenticate.
-            if (!account.isEmailVerified()) {
+            if (!account.isEmailVerified() || !account.isAccountActive()) {
                 throw new UsernameNotFoundException(
                         "Invalid credentials"
                 );
