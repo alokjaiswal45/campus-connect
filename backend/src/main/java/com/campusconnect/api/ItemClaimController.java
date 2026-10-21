@@ -31,6 +31,7 @@ public class ItemClaimController {
     }
 
     public record ClaimRequest(String ownershipAnswer) {}
+    public record IntakeRequest(String storageLocation) {}
     public record ReviewRequest(boolean approve) {}
     public record HandoverRequest(String pickupReference, boolean collegeIdChecked) {}
     public record ClaimView(Long id, Long itemId, String claimantEmail, String ownershipAnswer,
@@ -52,6 +53,28 @@ public class ItemClaimController {
         // Refresh the already managed claim after waiting for the item lock.
         entityManager.refresh(existing);
         return existing;
+    }
+
+    @PutMapping("/staff/items/{itemId}/intake")
+    @Transactional
+    public LostItem intake(@PathVariable Long itemId, @RequestBody IntakeRequest request,
+            Authentication auth) {
+        LostItem item = items.lockById(itemId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only open found items can be received");
+        }
+        if (item.custodyAcceptedAt != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already in custody");
+        }
+        if (request == null || request.storageLocation() == null
+                || request.storageLocation().isBlank() || request.storageLocation().length() > 255) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Storage location required");
+        }
+        item.custodyAcceptedAt = Instant.now();
+        item.custodyAcceptedBy = auth.getName();
+        item.custodyLocation = request.storageLocation().trim();
+        return items.save(item);
     }
 
     @PostMapping("/items/{itemId}/claims")
@@ -110,6 +133,10 @@ public class ItemClaimController {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Review decision required");
         }
+        if (request.approve() && claim.item.custodyAcceptedAt == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Staff must physically receive the item before approval");
+        }
         if (request.approve() && claims.existsByItemIdAndStatusIn(
                 claim.item.id, List.of("APPROVED", "HANDED_OVER"))) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already assigned");
@@ -128,6 +155,9 @@ public class ItemClaimController {
     public ClaimView handover(@PathVariable Long id, @RequestBody HandoverRequest request,
             Authentication auth) {
         ItemClaim claim = lockClaimItemThenRead(id);
+        if (claim.item.custodyAcceptedAt == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item not in staff custody");
+        }
         if (!"APPROVED".equals(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Claim not approved or already handed over");
         }
