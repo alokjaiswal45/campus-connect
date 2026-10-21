@@ -69,6 +69,24 @@ class ItemClaimControllerTest {
     }
 
     @Test
+    void closedItemCannotBeApproved() {
+        LostItem item = new LostItem();
+        item.id = 10L;
+        item.status = "RESOLVED";
+        item.custodyAcceptedAt = java.time.Instant.now();
+        ItemClaim claim = new ItemClaim();
+        claim.id = 20L;
+        claim.item = item;
+        claim.status = "PENDING";
+        claim.claimantEmail = "owner@bmsce.ac.in";
+        when(claims.findById(20L)).thenReturn(Optional.of(claim));
+        when(items.lockById(10L)).thenReturn(Optional.of(item));
+        assertThrows(ResponseStatusException.class, () ->
+                controller.review(20L, new ItemClaimController.ReviewRequest(true), staff));
+        verify(claims, never()).save(any());
+    }
+
+    @Test
     void cannotHandoverPendingClaim() {
         LostItem item = new LostItem();
         item.id = 10L;
