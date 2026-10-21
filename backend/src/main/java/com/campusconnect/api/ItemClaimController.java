@@ -58,11 +58,21 @@ public class ItemClaimController {
         return existing;
     }
 
+    public record StaffItemView(Long id, String title, String description, String location,
+            String category, String kind, String status, String postedBy, Instant createdAt,
+            Instant custodyAcceptedAt, String custodyAcceptedBy, String custodyLocation) {
+        static StaffItemView from(LostItem i) {
+            return new StaffItemView(i.id, i.title, i.description, i.location,
+                    i.category, i.kind, i.status, i.postedBy, i.createdAt,
+                    i.custodyAcceptedAt, i.custodyAcceptedBy, i.custodyLocation);
+        }
+    }
+
     @GetMapping("/staff/items/inventory")
-    public List<LostItem> inventory() {
+    public List<StaffItemView> inventory() {
         return items.findAll().stream()
                 .filter(item -> "FOUND".equalsIgnoreCase(item.kind))
-                .toList();
+                .map(StaffItemView::from).toList();
     }
 
     @PutMapping("/staff/items/{itemId}/intake")
