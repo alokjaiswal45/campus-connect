@@ -14,7 +14,7 @@ import { ApiService } from './api.service';
         <p>{{ label }} workspace</p>
         <h1>Welcome, {{ user?.name || 'team member' }}</h1>
         <p *ngIf="section === 'staff'">Manage Lost &amp; Found intake, verify ownership claims and record handovers.</p>
-        <p *ngIf="section === 'super-admin'">Manage administrator accounts and oversee campus operations.</p>
+        <p *ngIf="section === 'teacher'">Bring learning materials together. Upload course notes, modules and exam papers.</p>
       </section>
       <section class="role-portal-grid">
         <article *ngIf="section === 'staff'">
@@ -57,19 +57,18 @@ import { ApiService } from './api.service';
             </div>
           </div>
         </article>
-        <article *ngIf="section === 'super-admin'">
-          <h2>Administrator accounts</h2>
-          <p>Existing administrator accounts: {{ admins.length }}</p>
-          <p *ngIf="error">{{ error }}</p>
-          <form (ngSubmit)="createAdmin()" class="portal-form">
-            <label>Full name <input name="adminName" [(ngModel)]="newAdmin.name" required></label>
-            <label>College email <input name="adminEmail" type="email" [(ngModel)]="newAdmin.email" required></label>
-            <label>Temporary password <input name="adminPassword" type="password" [(ngModel)]="newAdmin.password" minlength="12" required></label>
-            <button type="submit" [disabled]="busy || newAdmin.password.length < 12">Create administrator</button>
+        <article *ngIf="section === 'teacher'" class="teacher-workspace">
+          <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>Academic resource studio</h2><p>Publish course notes and exam papers for students.</p></div></div>
+          <div class="portal-kpis"><div><strong>{{ subjects.length }}</strong><span>Subjects available</span></div><div><strong>{{ documents.length }}</strong><span>Documents in library</span></div></div>
+          <form (ngSubmit)="uploadDocument()" class="portal-form">
+            <label>Course subject <select name="subject" [(ngModel)]="newDoc.subjectId" required><option value="">Choose a subject</option><option *ngFor="let s of subjects" [value]="s.id">{{ s.branch?.code }} · Semester {{ s.semester }} · {{ s.name }}</option></select></label>
+            <label>Document title <input name="title" [(ngModel)]="newDoc.title" maxlength="255" placeholder="e.g. Module 2 · Data Structures" required></label>
+            <label>Material type <select name="type" [(ngModel)]="newDoc.type"><option value="RESOURCE">Lecture notes / study resource</option><option value="PAPER">Question paper</option></select></label>
+            <label *ngIf="newDoc.type === 'RESOURCE'">Module <select name="module" [(ngModel)]="newDoc.moduleNumber"><option value="">Choose module</option><option *ngFor="let m of [1,2,3,4,5]" [value]="m">Module {{ m }}</option></select></label>
+            <ng-container *ngIf="newDoc.type === 'PAPER'"><label>Exam <select name="exam" [(ngModel)]="newDoc.examType"><option value="">Choose exam</option><option *ngFor="let e of ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY']" [value]="e">{{ e }}</option></select></label><label>Exam year <input name="year" [(ngModel)]="newDoc.academicYear" maxlength="4" placeholder="2026"></label></ng-container>
+            <label>PDF (maximum 20 MB) <input type="file" accept=".pdf,application/pdf" (change)="choosePdf($event)"></label>
+            <button type="submit" [disabled]="busy || !pdf || !newDoc.subjectId || !newDoc.title.trim() || (newDoc.type === 'RESOURCE' ? !newDoc.moduleNumber : !newDoc.examType || !newDoc.academicYear)">{{ busy ? 'Publishing…' : 'Publish resource ↗' }}</button>
           </form>
-          <ul><li *ngFor="let admin of admins">{{ admin.name }} — {{ admin.email }}
-            <button (click)="revokeAdmin(admin)" [disabled]="busy">Revoke admin role</button>
-          </li></ul>
         </article>
       </section>
     </main>
@@ -77,10 +76,12 @@ import { ApiService } from './api.service';
 })
 export class RolePortalComponent implements OnInit {
   section = this.route.snapshot.data['section'] as string;
-  label = this.section === 'staff' ? 'Staff' : 'Super Admin';
+  label = this.section === 'staff' ? 'Staff' : 'Teacher';
   user: any;
-  admins: any[] = [];
-  newAdmin = { name: '', email: '', password: '' };
+  subjects: any[] = [];
+  documents: any[] = [];
+  pdf: File | null = null;
+  newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
   inventory: any[] = [];
   itemId: number | null = null;
@@ -93,38 +94,28 @@ export class RolePortalComponent implements OnInit {
   ngOnInit(): void {
     this.api.get('/auth/me').subscribe({ next: user => this.user = user });
     if (this.section === 'staff') this.loadItems();
-    if (this.section === 'super-admin') {
-      this.api.get('/super-admin/admins').subscribe({
-        next: data => this.admins = data,
-        error: () => this.error = 'Could not load administrator accounts.'
-      });
+    if (this.section === 'teacher') {
+      this.api.get('/subjects').subscribe({ next: subjects => this.subjects = subjects, error: () => this.error = 'Could not load subjects.' });
+      this.api.get('/documents').subscribe({ next: documents => this.documents = documents });
     }
   }
-  reloadAdmins(): void {
-    this.api.get('/super-admin/admins').subscribe({
-      next: admins => this.admins = admins,
-      error: () => this.error = 'Unable to load administrator accounts.'
-    });
+  choosePdf(event: Event): void {
+    this.pdf = (event.target as HTMLInputElement).files?.[0] || null;
   }
-  createAdmin(): void {
-    this.busy = true;
-    this.error = '';
-    this.api.post('/super-admin/admins', this.newAdmin).subscribe({
-      next: () => {
-        this.busy = false;
-        this.newAdmin = { name: '', email: '', password: '' };
-        this.notice = 'Administrator created.';
-        this.reloadAdmins();
-      },
-      error: () => { this.busy = false; this.error = 'Unable to create administrator.'; }
-    });
-  }
-  revokeAdmin(admin: any): void {
-    if (!confirm('Revoke administrator privileges for ' + admin.email + '?')) return;
-    this.busy = true;
-    this.api.delete('/super-admin/admins/' + admin.id).subscribe({
-      next: () => { this.busy = false; this.notice = 'Administrator role revoked.'; this.reloadAdmins(); },
-      error: () => { this.busy = false; this.error = 'Unable to revoke administrator role.'; }
+  uploadDocument(): void {
+    if (!this.pdf || !this.newDoc.subjectId || !this.newDoc.title.trim()) return;
+    if (this.pdf.size > 20 * 1024 * 1024 || this.pdf.type !== 'application/pdf') { this.error = 'Choose a PDF under 20 MB.'; return; }
+    const form = new FormData();
+    form.append('subjectId', this.newDoc.subjectId);
+    form.append('title', this.newDoc.title.trim());
+    form.append('type', this.newDoc.type);
+    form.append('file', this.pdf);
+    if (this.newDoc.type === 'RESOURCE') form.append('moduleNumber', this.newDoc.moduleNumber);
+    else { form.append('examType', this.newDoc.examType); form.append('academicYear', this.newDoc.academicYear); }
+    this.busy = true; this.error = ''; this.notice = '';
+    this.api.uploadDocument(form).subscribe({
+      next: () => { this.busy = false; this.pdf = null; this.newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' }; this.notice = 'Resource published successfully.'; this.api.get('/documents').subscribe(d => this.documents = d); },
+      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Upload failed.'; }
     });
   }
   intake(): void {
