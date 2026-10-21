@@ -596,147 +596,74 @@
 
       <!-- LOST AND FOUND -->
       <ng-container *ngIf="page === 'lost'">
-
         <div class="page-heading">
           <div class="eyebrow">CAMPUS COMMUNITY</div>
           <h1>Lost &amp; Found</h1>
-          <p>Helping belongings find their way home.</p>
+          <p>Report missing belongings, browse found items, and submit private ownership claims.</p>
         </div>
 
-        <div class="two-col">
+        <div class="lf-filters" role="group" aria-label="Filter item reports">
+          <button *ngFor="let filter of ['ALL', 'LOST', 'FOUND', 'UNRESOLVED']"
+            [class.active]="lostFilter === filter" (click)="lostFilter = $any(filter)">
+            {{ filter === 'ALL' ? 'All' : filter === 'UNRESOLVED' ? 'Unresolved' : filter === 'LOST' ? 'Lost' : 'Found' }}
+          </button>
+        </div>
 
-          <div class="panel form-panel">
-
-            <h2>Report an item</h2>
-
-            <p class="muted">
-              Found something or looking for something?
-            </p>
-
-            <ng-container *ngIf="user">
-
-              <label>
-                Report type
-
-                <select [(ngModel)]="newItem.kind">
-                  <option value="LOST">I lost something</option>
-                  <option value="FOUND">I found something</option>
-                </select>
-              </label>
-
-              <label>
-                Item name
-
-                <input
-                  [(ngModel)]="newItem.title"
-                  placeholder="e.g. Black water bottle">
-              </label>
-
-              <label>
-                Category
-
-                <input
-                  [(ngModel)]="newItem.category"
-                  placeholder="e.g. Electronics">
-              </label>
-
-              <label>
-                Last seen location
-
-                <input
-                  [(ngModel)]="newItem.location"
-                  placeholder="e.g. Library, 2nd floor">
-              </label>
-
-              <label>
-                Description
-
-                <textarea
-                  [(ngModel)]="newItem.description"
-                  placeholder="Describe the item...">
-                </textarea>
-              </label>
-
-              <button
-                class="primary-btn"
-                (click)="addItem()"
-                [disabled]="!newItem.title">
-                Post report →
-              </button>
-
-            </ng-container>
-
-            <div class="empty" *ngIf="!user">
-
-              <p>Sign in to report an item.</p>
-
-              <button
-                class="primary-btn"
-                (click)="nav('login')">
-                Sign in
-              </button>
-
-            </div>
-
-          </div>
-
-          <div>
-
-            <div class="section-heading">
-              <h2>Recent reports</h2>
-              <span class="pill">{{ items.length }} posts</span>
-            </div>
-
-            <div
-              class="panel item"
-              *ngFor="let i of items.slice().reverse()">
-
-              <div class="item-head">
-
-                <span
-                  class="pill"
-                  [class.found]="i.kind === 'FOUND'">
-                  {{ i.kind }}
-                </span>
-
-                <span class="muted">
-                  {{ i.status }}
-                </span>
-
-              </div>
-
+        <div class="lf-grid">
+          <article class="lf-card" *ngFor="let i of visibleItems">
+            <div class="lf-card-art" aria-hidden="true">{{ i.category === 'Electronics' ? '📱' : i.category === 'Books' ? '📚' : i.category === 'Keys' ? '🔑' : '🎒' }}</div>
+            <div class="lf-card-body">
+              <div class="item-head"><span class="pill" [class.found]="i.kind === 'FOUND'">{{ i.kind }}</span>
+                <span class="muted">{{ i.status }}</span></div>
               <h3>{{ i.title }}</h3>
-
               <p>{{ i.description }}</p>
-
-              <small>
-                📍 {{ i.location }}
-                · Posted by {{ i.postedBy }}
-              </small>
-
-              <div
-                *ngIf="user && (user.email === i.postedBy || isAdmin) && i.status === 'OPEN'">
-
-                <button
-                  class="outline-btn"
-                  (click)="resolve(i.id)">
-                  Mark resolved
-                </button>
-
+              <small>📍 {{ i.location }} · {{ i.category }}</small>
+              <div class="lf-actions">
+                <button class="outline-btn" (click)="openItem(i)">View details</button>
+                <button class="outline-btn" *ngIf="user && (user.email === i.postedBy || isAdmin) && i.status === 'OPEN'"
+                  (click)="resolve(i.id)">Mark resolved</button>
               </div>
-
             </div>
+          </article>
+        </div>
+        <div class="panel empty" *ngIf="visibleItems.length === 0">No matching reports yet.</div>
 
-            <div
-              class="panel empty"
-              *ngIf="items.length === 0">
-              No reports yet. Be the first to help your campus!
-            </div>
-
+        <div class="panel lf-details" *ngIf="selectedItem as i">
+          <button class="outline-btn" (click)="selectedItem = null">Close details ×</button>
+          <h2>{{ i.title }}</h2>
+          <p>{{ i.description }}</p>
+          <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
+          <div *ngIf="user && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
+            <h3>Claim this item</h3>
+            <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
+            <textarea [(ngModel)]="claimAnswer" maxlength="2000" placeholder="Describe identifying details only the owner would know"></textarea>
+            <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10">Submit private claim</button>
           </div>
-
         </div>
 
+        <div class="panel form-panel lf-report">
+          <h2>Report an item</h2>
+          <ng-container *ngIf="user; else lfLogin">
+            <label>Report type
+              <select [(ngModel)]="newItem.kind"><option value="LOST">I lost something</option><option value="FOUND">I found something</option></select>
+            </label>
+            <label>Item name <input [(ngModel)]="newItem.title" maxlength="255" placeholder="Black water bottle"></label>
+            <label>Category <input [(ngModel)]="newItem.category" maxlength="100" placeholder="Electronics"></label>
+            <label>Location <input [(ngModel)]="newItem.location" maxlength="255" placeholder="Library, second floor"></label>
+            <label>Description <textarea [(ngModel)]="newItem.description" maxlength="3000" placeholder="Describe the item"></textarea></label>
+            <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim()">Post report →</button>
+          </ng-container>
+          <ng-template #lfLogin><p>Sign in to report an item.</p><button class="primary-btn" (click)="nav('login')">Sign in</button></ng-template>
+        </div>
+
+        <section class="panel lf-claims" *ngIf="user">
+          <div class="section-heading"><h2>My ownership claims</h2><button class="outline-btn" (click)="loadMyClaims()">Refresh</button></div>
+          <p *ngIf="myClaims.length === 0">No claims loaded.</p>
+          <article *ngFor="let claim of myClaims">
+            <strong>Item #{{ claim.itemId }} · {{ claim.status }}</strong>
+            <p *ngIf="claim.pickupReference">Pickup reference: <strong>{{ claim.pickupReference }}</strong>. Present it with your college ID at the desk.</p>
+          </article>
+        </section>
       </ng-container>
 
       <!-- LOGIN / REGISTER / OTP -->
