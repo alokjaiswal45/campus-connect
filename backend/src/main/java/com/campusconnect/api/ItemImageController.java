@@ -63,7 +63,7 @@ public class ItemImageController {
         // Re-encode to strip EXIF/metadata and avoid serving attacker-controlled payload bytes.
         String format = "image/png".equals(detectedType) ? "png" : "jpeg";
         BufferedImage safeImage = decoded;
-        if ("jpeg".equals(format) && decoded.getColorModel().hasAlpha()) {
+        if ("jpeg".equals(format)) {
             safeImage = new BufferedImage(decoded.getWidth(), decoded.getHeight(),
                     BufferedImage.TYPE_INT_RGB);
             java.awt.Graphics2D graphics = safeImage.createGraphics();
