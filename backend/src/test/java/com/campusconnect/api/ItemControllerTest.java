@@ -2,6 +2,8 @@ package com.campusconnect.api;
 
 import com.campusconnect.model.LostItem;
 import com.campusconnect.repo.LostItemRepository;
+import com.campusconnect.repo.ItemClaimRepository;
+import com.campusconnect.repo.ClaimDisputeRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
@@ -12,7 +14,9 @@ import static org.mockito.Mockito.*;
 
 class ItemControllerTest {
     private final LostItemRepository repository = mock(LostItemRepository.class);
-    private final ItemController controller = new ItemController(repository);
+    private final ItemClaimRepository claims = mock(ItemClaimRepository.class);
+    private final ClaimDisputeRepository disputes = mock(ClaimDisputeRepository.class);
+    private final ItemController controller = new ItemController(repository, claims, disputes);
     private final UsernamePasswordAuthenticationToken student =
             new UsernamePasswordAuthenticationToken("student@bmsce.ac.in", "unused");
 
@@ -47,6 +51,28 @@ class ItemControllerTest {
                 controller.create(new ItemController.ItemRequest(
                         "Wallet", "", "", "", "APPROVED"), student));
         verifyNoInteractions(repository);
+    }
+
+    @Test
+    void ownerCannotCloseWhileClaimIsPending() {
+        LostItem item = new LostItem();
+        item.postedBy = "student@bmsce.ac.in";
+        item.status = "OPEN";
+        when(repository.lockById(1L)).thenReturn(Optional.of(item));
+        when(claims.existsByItemIdAndStatusIn(eq(1L), anyList())).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
+        verify(repository, never()).save(any());
+    }
+
+    @Test
+    void ownerCannotCloseWhileOwnershipAppealIsOpen() {
+        LostItem item = new LostItem();
+        item.postedBy = "student@bmsce.ac.in";
+        item.status = "OPEN";
+        when(repository.lockById(1L)).thenReturn(Optional.of(item));
+        when(disputes.existsOpenForItem(1L, "OPEN")).thenReturn(true);
+        assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
+        verify(repository, never()).save(any());
     }
 
     @Test
