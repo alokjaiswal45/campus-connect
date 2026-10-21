@@ -35,7 +35,7 @@ public class ItemController {
     }
 
     @PostMapping
-    public ResponseEntity<LostItem> create(@RequestBody ItemRequest request, Authentication auth) {
+    public ResponseEntity<PublicItem> create(@RequestBody ItemRequest request, Authentication auth) {
         if (request == null || request.title() == null || request.title().isBlank()
                 || request.title().length() > 255 || request.kind() == null
                 || !List.of("LOST", "FOUND").contains(request.kind().toUpperCase())
@@ -53,12 +53,12 @@ public class ItemController {
         item.postedBy = auth.getName();
         item.status = "OPEN";
         item.createdAt = Instant.now();
-        return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(item));
+        return ResponseEntity.status(HttpStatus.CREATED).body(PublicItem.from(repo.save(item)));
     }
 
     @PutMapping("/{id}/close")
     @Transactional
-    public ResponseEntity<LostItem> close(@PathVariable Long id, Authentication auth) {
+    public ResponseEntity<PublicItem> close(@PathVariable Long id, Authentication auth) {
         LostItem item = repo.lockById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
         boolean admin = auth.getAuthorities().stream().anyMatch(a ->
@@ -71,6 +71,6 @@ public class ItemController {
                     "Item in staff custody must be resolved through verified handover");
         }
         item.status = "RESOLVED";
-        return ResponseEntity.ok(repo.save(item));
+        return ResponseEntity.ok(PublicItem.from(repo.save(item)));
     }
 }
