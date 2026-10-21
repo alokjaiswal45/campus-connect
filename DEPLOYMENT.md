@@ -19,8 +19,11 @@ This branch is **not deployed**. Do not merge or publish until the checks below 
 4. Use strong unique passwords for admin/super-admin and ensure student OTP verification works with the real college mail domain.
 5. Set production TLS, secure reverse-proxy headers, database backups, and monitoring. Configure strict network restrictions for backend and DB.
 6. Complete an HTTP-level role permission matrix and full student→staff→admin dispute and pickup workflow on staging. Confirm no other student can view private proof or claim answers.
-7. Review upload antivirus scanning, EXIF/metadata stripping, throttling, and storage quotas before accepting untrusted production uploads.
-8. Check GitHub Actions **frontend**, **backend**, and **mysql-migrations** jobs. Passing CI does not prove production readiness.
+7. Uploaded JPEG/PNG files are decoded and re-encoded to strip metadata, with 5 MB encoded-size and 25-million-pixel limits. **This is not antivirus scanning**: independently review malware scanning, decompression/resource limits, upload throttling, and total storage quotas before production.
+8. **Authentication risk:** the Angular client currently stores a Base64-encoded HTTP Basic username/password in `sessionStorage` (`cc_auth`). Base64 is not encryption. This is a release blocker for a public service until authentication is redesigned around short-lived credentials and appropriately secured sessions/tokens, with an XSS review.
+9. Add request throttling for registration, login, OTP verification and public read endpoints; OTP resend is currently limited per email, not per client/IP.
+10. Set explicit frontend Content Security Policy and secure headers at the reverse proxy; validate logout and authorization after role changes.
+11. Check GitHub Actions **frontend**, **backend**, and **mysql-migrations** jobs. Passing CI does not prove production readiness.
 
 ## Deployment verification
 
