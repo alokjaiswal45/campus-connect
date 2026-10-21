@@ -51,6 +51,7 @@ class AdminUserControllerTest {
         when(users.save(teacher)).thenReturn(teacher);
         controller.terminate(2L);
         assertFalse(teacher.isEmailVerified());
+        assertFalse(teacher.isAccountActive());
         assertNull(teacher.getEmailVerifiedAt());
     }
 }
