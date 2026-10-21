@@ -37,8 +37,8 @@ class ItemControllerTest {
                 new ItemController.ItemRequest("Wallet", "Black wallet", "Library", "Other", "FOUND"),
                 student);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
-        assertEquals("student@bmsce.ac.in", result.getBody().postedBy);
-        assertEquals("OPEN", result.getBody().status);
+        assertEquals("student@bmsce.ac.in", result.getBody().postedBy());
+        assertEquals("OPEN", result.getBody().status());
     }
 
     @Test
