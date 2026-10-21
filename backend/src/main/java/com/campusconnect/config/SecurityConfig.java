@@ -163,7 +163,7 @@ public class SecurityConfig {
                         // ======================================
 
                         .requestMatchers("/api/admin/**")
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .hasRole("ADMIN")
 
                         // Create branches.
                         .requestMatchers(
@@ -171,7 +171,7 @@ public class SecurityConfig {
                                 "/api/branches",
                                 "/api/branches/**"
                         )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .hasRole("ADMIN")
 
                         // Delete branches.
                         .requestMatchers(
@@ -179,7 +179,7 @@ public class SecurityConfig {
                                 "/api/branches",
                                 "/api/branches/**"
                         )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .hasRole("ADMIN")
 
                         // Create subjects.
                         .requestMatchers(
@@ -187,7 +187,7 @@ public class SecurityConfig {
                                 "/api/subjects",
                                 "/api/subjects/**"
                         )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .hasRole("ADMIN")
 
                         // Delete subjects.
                         .requestMatchers(
@@ -195,27 +195,19 @@ public class SecurityConfig {
                                 "/api/subjects",
                                 "/api/subjects/**"
                         )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .hasRole("ADMIN")
 
-                        // Upload academic documents.
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/documents",
-                                "/api/documents/**"
-                        )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        // Upload academic documents: only teachers.
+                        .requestMatchers(HttpMethod.POST, "/api/documents", "/api/documents/**")
+                        .hasRole("TEACHER")
 
                         // Delete academic documents.
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/documents",
-                                "/api/documents/**"
-                        )
-                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/documents", "/api/documents/**")
+                        .hasRole("TEACHER")
 
-                        // Super-admin-only account governance.
-                        .requestMatchers("/api/super-admin/**")
-                        .hasRole("SUPER_ADMIN")
+                        // Student reports only; admins and employees may view them.
+                        .requestMatchers(HttpMethod.POST, "/api/items", "/api/items/**")
+                        .hasRole("STUDENT")
 
                         // Ownership claims and appeals are reserved for student accounts.
                         .requestMatchers(HttpMethod.POST, "/api/items/*/claims",
@@ -224,8 +216,9 @@ public class SecurityConfig {
 
                         // Lost-and-found desk operations.
                         .requestMatchers("/api/staff/**")
-                        .hasAnyRole("STAFF", "ADMIN", "SUPER_ADMIN")
+                        .hasRole("STAFF")
 
+                        // Administrators may review disputes and reports but cannot perform desk handovers.
                         // Student-only endpoints (future student controllers).
                         .requestMatchers("/api/student/**")
                         .hasRole("STUDENT")
