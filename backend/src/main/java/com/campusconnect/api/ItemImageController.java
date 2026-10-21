@@ -60,7 +60,13 @@ public class ItemImageController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image exceeds 5 MB");
         }
         String detectedType = verifiedType(bytes);
-        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(bytes));
+        BufferedImage decoded;
+        try {
+            decoded = ImageIO.read(new ByteArrayInputStream(bytes));
+        } catch (java.io.IOException | RuntimeException ex) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Unable to decode image", ex);
+        }
         if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0
                 || (long) decoded.getWidth() * decoded.getHeight() > 25_000_000L) {
             throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
