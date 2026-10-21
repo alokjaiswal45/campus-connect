@@ -168,7 +168,7 @@ public class SecurityConfig {
                                 "/api/branches",
                                 "/api/branches/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Delete branches.
                         .requestMatchers(
@@ -176,7 +176,7 @@ public class SecurityConfig {
                                 "/api/branches",
                                 "/api/branches/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Create subjects.
                         .requestMatchers(
@@ -184,7 +184,7 @@ public class SecurityConfig {
                                 "/api/subjects",
                                 "/api/subjects/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Delete subjects.
                         .requestMatchers(
@@ -192,7 +192,7 @@ public class SecurityConfig {
                                 "/api/subjects",
                                 "/api/subjects/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Upload academic documents.
                         .requestMatchers(
@@ -200,7 +200,7 @@ public class SecurityConfig {
                                 "/api/documents",
                                 "/api/documents/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Delete academic documents.
                         .requestMatchers(
@@ -208,7 +208,7 @@ public class SecurityConfig {
                                 "/api/documents",
                                 "/api/documents/**"
                         )
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Super-admin-only account governance.
                         .requestMatchers("/api/super-admin/**")
