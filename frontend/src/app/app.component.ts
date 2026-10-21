@@ -175,7 +175,7 @@ export class AppComponent implements OnInit {
   selectedLibraryYear = '';
 
   // Admin forms
-  newStaff = { name: '', email: '', password: '' };
+  newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
   campusUsers: any[] = [];
   adminStats: Record<string, number> = {};
   loadAdminStats(): void {
@@ -188,11 +188,18 @@ export class AppComponent implements OnInit {
     this.error = '';
     this.api.post('/admin/users/staff', this.newStaff).subscribe({
       next: () => {
-        this.notice = 'Staff account created.';
-        this.newStaff = { name: '', email: '', password: '' };
+        this.notice = 'Employee account created.';
+        this.newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
         this.loadCampusUsers();
       },
       error: (err: any) => this.error = this.errorMessage(err, 'Unable to create staff account.')
+    });
+  }
+  terminateEmployee(account: any): void {
+    if (!confirm('Deactivate access for ' + account.email + '? Existing records will be preserved.')) return;
+    this.api.put('/admin/users/' + account.id + '/terminate', {}).subscribe({
+      next: () => { this.notice = 'Employee access deactivated.'; this.loadCampusUsers(); },
+      error: (err: any) => this.error = this.errorMessage(err, 'Unable to deactivate employee.')
     });
   }
   loadCampusUsers(): void {
@@ -256,7 +263,7 @@ export class AppComponent implements OnInit {
       next: (user: any) => {
         this.user = user;
         this.email = user.email || '';
-        this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
+        this.page = user.role === 'ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
         this.loadMyClaims();
         if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); this.loadAdminDisputes(); }
@@ -269,7 +276,7 @@ export class AppComponent implements OnInit {
   }
 
   get isAdmin(): boolean {
-    return this.user?.role === 'ADMIN' || this.user?.role === 'SUPER_ADMIN';
+    return this.user?.role === 'ADMIN';
   }
 
   // ==========================================
