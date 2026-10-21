@@ -177,6 +177,24 @@ export class AppComponent implements OnInit {
   // Admin forms
   newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
   campusUsers: any[] = [];
+  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'overview';
+  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'STUDENT';
+  peopleSearch = '';
+  employeeFormOpen = false;
+  employeeSaving = false;
+  employeeTerminatingId: number | null = null;
+  get filteredCampusUsers(): any[] {
+    const query = this.peopleSearch.trim().toLowerCase();
+    return this.campusUsers.filter(u => u.role === this.peopleTab &&
+      (!query || [u.name, u.email, u.role].some((v: string) => String(v || '').toLowerCase().includes(query))));
+  }
+  countPeople(role: string): number { return this.campusUsers.filter(u => u.role === role).length; }
+  selectAdminSection(section: 'overview' | 'people' | 'academics' | 'lostfound'): void {
+    this.adminSection = section;
+    if (section === 'people') this.loadCampusUsers();
+    if (section === 'lostfound') { this.loadAdminStats(); this.loadAdminDisputes(); }
+  }
+
   adminStats: Record<string, number> = {};
   loadAdminStats(): void {
     this.api.get('/admin/analytics').subscribe({
@@ -185,21 +203,27 @@ export class AppComponent implements OnInit {
     });
   }
   createStaff(): void {
+    if (this.employeeSaving) return;
     this.error = '';
+    this.employeeSaving = true;
     this.api.post('/admin/users/staff', this.newStaff).subscribe({
       next: () => {
+        this.employeeSaving = false;
         this.notice = 'Employee account created.';
+        this.employeeFormOpen = false;
+        this.peopleTab = this.newStaff.role as 'TEACHER' | 'STAFF';
         this.newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
         this.loadCampusUsers();
       },
-      error: (err: any) => this.error = this.errorMessage(err, 'Unable to create staff account.')
+      error: (err: any) => { this.employeeSaving = false; this.error = this.errorMessage(err, 'Unable to create employee account.'); }
     });
   }
   terminateEmployee(account: any): void {
     if (!confirm('Deactivate access for ' + account.email + '? Existing records will be preserved.')) return;
+    this.employeeTerminatingId = account.id;
     this.api.put('/admin/users/' + account.id + '/terminate', {}).subscribe({
-      next: () => { this.notice = 'Employee access deactivated.'; this.loadCampusUsers(); },
-      error: (err: any) => this.error = this.errorMessage(err, 'Unable to deactivate employee.')
+      next: () => { this.employeeTerminatingId = null; this.notice = 'Employee access deactivated.'; this.loadCampusUsers(); },
+      error: (err: any) => { this.employeeTerminatingId = null; this.error = this.errorMessage(err, 'Unable to deactivate employee.'); }
     });
   }
   loadCampusUsers(): void {
