@@ -1,7 +1,61 @@
 package com.campusconnect.api;
-import com.campusconnect.model.LostItem;import com.campusconnect.repo.LostItemRepository;import org.springframework.security.core.Authentication;import org.springframework.web.bind.annotation.*;import org.springframework.http.*;import java.util.*;
-@RestController @RequestMapping("/api/items") public class ItemController {private final LostItemRepository repo;public ItemController(LostItemRepository r){repo=r;}
-@GetMapping public Object all(){return repo.findAll();}
-@PostMapping public Object create(@RequestBody LostItem item,Authentication auth){item.id=null;item.postedBy=auth.getName();item.status="OPEN";item.createdAt=java.time.Instant.now();return repo.save(item);}
-@PutMapping("/{id}/close") public ResponseEntity<?> close(@PathVariable Long id,Authentication auth){LostItem item=repo.findById(id).orElseThrow();if(!item.postedBy.equals(auth.getName())&&auth.getAuthorities().stream().noneMatch(a->a.getAuthority().equals("ROLE_ADMIN")))return ResponseEntity.status(403).build();item.status="RESOLVED";return ResponseEntity.ok(repo.save(item));}
+
+import com.campusconnect.model.LostItem;
+import com.campusconnect.repo.LostItemRepository;
+import java.time.Instant;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+@RestController
+@RequestMapping("/api/items")
+public class ItemController {
+    private final LostItemRepository repo;
+    public ItemController(LostItemRepository repo) { this.repo = repo; }
+
+    public record ItemRequest(String title, String description, String location,
+            String category, String kind) {}
+
+    @GetMapping
+    public List<LostItem> all() { return repo.findAll(); }
+
+    @PostMapping
+    public ResponseEntity<LostItem> create(@RequestBody ItemRequest request, Authentication auth) {
+        if (request == null || request.title() == null || request.title().isBlank()
+                || request.title().length() > 255 || request.kind() == null
+                || !List.of("LOST", "FOUND").contains(request.kind().toUpperCase())
+                || request.description() != null && request.description().length() > 3000
+                || request.location() != null && request.location().length() > 255
+                || request.category() != null && request.category().length() > 100) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid item report");
+        }
+        LostItem item = new LostItem();
+        item.title = request.title().trim();
+        item.description = request.description();
+        item.location = request.location();
+        item.category = request.category();
+        item.kind = request.kind().toUpperCase();
+        item.postedBy = auth.getName();
+        item.status = "OPEN";
+        item.createdAt = Instant.now();
+        return ResponseEntity.status(HttpStatus.CREATED).body(repo.save(item));
+    }
+
+    @PutMapping("/{id}/close")
+    @Transactional
+    public ResponseEntity<LostItem> close(@PathVariable Long id, Authentication auth) {
+        LostItem item = repo.lockById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        boolean admin = auth.getAuthorities().stream().anyMatch(a ->
+                List.of("ROLE_ADMIN", "ROLE_SUPER_ADMIN").contains(a.getAuthority()));
+        if (!auth.getName().equalsIgnoreCase(item.postedBy) && !admin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
+        }
+        item.status = "RESOLVED";
+        return ResponseEntity.ok(repo.save(item));
+    }
 }
