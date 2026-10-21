@@ -160,7 +160,7 @@ public class SecurityConfig {
                         // ======================================
 
                         .requestMatchers("/api/admin/**")
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "SUPER_ADMIN")
 
                         // Create branches.
                         .requestMatchers(
@@ -209,6 +209,18 @@ public class SecurityConfig {
                                 "/api/documents/**"
                         )
                         .hasRole("ADMIN")
+
+                        // Super-admin-only account governance.
+                        .requestMatchers("/api/super-admin/**")
+                        .hasRole("SUPER_ADMIN")
+
+                        // Lost-and-found desk operations.
+                        .requestMatchers("/api/staff/**")
+                        .hasAnyRole("STAFF", "ADMIN", "SUPER_ADMIN")
+
+                        // Student-only endpoints (future student controllers).
+                        .requestMatchers("/api/student/**")
+                        .hasRole("STUDENT")
 
                         // ======================================
                         // AUTHENTICATED USER ENDPOINTS
