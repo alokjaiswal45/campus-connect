@@ -30,7 +30,7 @@ Item images and private evidence are served through authenticated `GET /api/imag
 
 - Additive MySQL scripts are provided at `backend/db/migrations/001_role_portals_lost_found.sql` and `002_claim_disputes.sql`. **Back up your database and review the schema before applying them manually, in order**. They have not been validated against the live database and are not auto-applied.
 - Item photos are stored in MySQL. Configure database storage and backups for image volume.
-- Image uploads accept JPEG/PNG/WebP up to 5 MB. MIME signatures are checked, but a dedicated image decoder, antivirus scan, metadata stripping, and request-rate limiting are recommended for production.
+- Image uploads accept JPEG/PNG up to 5 MB. MIME signatures are checked, but a dedicated image decoder, antivirus scan, metadata stripping, and request-rate limiting are recommended for production.
 - Concurrency protection uses pessimistic row locking on the item row. Validate against the target MySQL configuration with parallel integration tests.
 - Staff and admin account provisioning currently uses administrator-supplied initial passwords. Add a secure password-reset/invitation flow before real deployment.
 - Staff inventory browsing, basic admin disputes and aggregate analytics are implemented. End-to-end MySQL integration tests, upload hardening, production deployment and operational review remain incomplete.
