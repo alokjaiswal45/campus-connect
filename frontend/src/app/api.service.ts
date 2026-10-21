@@ -128,6 +128,18 @@ export class ApiService {
     );
   }
 
+  uploadImage(path: string, file: File): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<any>(this.base + path, form, { headers: this.getHeaders() });
+  }
+
+  getImage(id: number): Observable<Blob> {
+    return this.http.get(this.base + '/images/' + id, {
+      headers: this.getHeaders(), responseType: 'blob'
+    });
+  }
+
   // =====================================
   // PDF FILE URL
   // =====================================
