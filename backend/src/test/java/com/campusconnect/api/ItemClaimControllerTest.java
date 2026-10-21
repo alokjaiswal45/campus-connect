@@ -3,6 +3,7 @@ package com.campusconnect.api;
 import com.campusconnect.model.ItemClaim;
 import com.campusconnect.model.LostItem;
 import com.campusconnect.repo.ItemClaimRepository;
+import com.campusconnect.repo.ClaimDisputeRepository;
 import com.campusconnect.repo.LostItemRepository;
 import jakarta.persistence.EntityManager;
 import java.util.Optional;
@@ -16,7 +17,7 @@ class ItemClaimControllerTest {
     private final ItemClaimRepository claims = mock(ItemClaimRepository.class);
     private final LostItemRepository items = mock(LostItemRepository.class);
     private final EntityManager em = mock(EntityManager.class);
-    private final ItemClaimController controller = new ItemClaimController(claims, items, em);
+    private final ItemClaimController controller = new ItemClaimController(claims, items, em, mock(ClaimDisputeRepository.class));
     private final UsernamePasswordAuthenticationToken staff =
             new UsernamePasswordAuthenticationToken("desk@bmsce.ac.in", "unused");
 
