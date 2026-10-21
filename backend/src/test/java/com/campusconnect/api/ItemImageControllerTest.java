@@ -65,8 +65,9 @@ class ItemImageControllerTest {
         when(items.lockById(2L)).thenReturn(Optional.of(item));
         MockMultipartFile file = new MockMultipartFile("file", "bad.png", "image/png",
                 new byte[] { (byte)137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3 });
-        assertThrows(Exception.class, () ->
+        ResponseStatusException failure = assertThrows(ResponseStatusException.class, () ->
                 controller.uploadItem(2L, file, login("finder@bmsce.ac.in")));
+        assertEquals(org.springframework.http.HttpStatus.UNSUPPORTED_MEDIA_TYPE, failure.getStatusCode());
         verify(images, never()).save(any());
     }
 
