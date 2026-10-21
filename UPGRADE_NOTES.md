@@ -14,7 +14,7 @@ The Angular frontend currently uses `http://localhost:8080/api` and HTTP Basic c
 
 ## Build checks
 
-GitHub Actions runs `npm ci && npm run build` in `frontend` and `mvn -B test package` in `backend`. See the Actions tab for results on the latest commit. Local testing requires Node 22, Java 21, Maven, and a configured MySQL server.
+GitHub Actions runs `npm ci && npm run build` in `frontend`, `mvn -B test package` in `backend`, and a MySQL 8 service job to apply both migration scripts against a minimal legacy table. See the Actions tab for results on the latest commit. Local testing requires Node 22, Java 21, Maven, and a configured MySQL server.
 
 ## Lost & Found workflow
 
