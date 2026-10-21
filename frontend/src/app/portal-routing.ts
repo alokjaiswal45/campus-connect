@@ -9,8 +9,8 @@ import { RolePortalComponent } from './role-portal.component';
 const home: Record<string, string> = {
   STUDENT: '/student/dashboard',
   STAFF: '/staff/dashboard',
-  ADMIN: '/admin/dashboard',
-  SUPER_ADMIN: '/super-admin/dashboard'
+  TEACHER: '/teacher/dashboard',
+  ADMIN: '/admin/dashboard'
 };
 
 export function destination(role: string): string {
@@ -36,7 +36,7 @@ export const roleGuard: CanActivateFn = route => {
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'student/login' },
   { path: 'student/onboarding', component: AppComponent },
-  ...(['student', 'staff', 'admin', 'super-admin'] as const).flatMap(section => {
+  ...(['student', 'teacher', 'staff', 'admin'] as const).flatMap(section => {
     const role = section.replace('-', '_').toUpperCase();
     return [
       { path: section + '/login', component: LoginPageComponent, data: { role, section } },
