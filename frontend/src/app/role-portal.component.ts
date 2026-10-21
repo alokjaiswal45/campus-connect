@@ -94,19 +94,17 @@ import { ApiService } from './api.service';
             <button type="button" [class.selected]="teacherTab === 'upload'" (click)="teacherTab = 'upload'">＋ Upload resource</button>
           </nav>
           <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
-          <section *ngIf="teacherTab === 'browse'" class="teacher-library">
-            <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>Academic library</h2><p>Find and open course notes and question papers already available to students.</p></div></div>
-            <div class="portal-kpis"><div><strong>{{ subjects.length }}</strong><span>Subjects available</span></div><div><strong>{{ documents.length }}</strong><span>Published PDFs</span></div></div>
-            <div class="teacher-library-filters">
-              <label>Search <input [(ngModel)]="resourceSearch" placeholder="Search title, subject or branch"></label>
-              <label>Category <select [(ngModel)]="resourceType"><option value="ALL">All materials</option><option value="RESOURCE">Study resources</option><option value="PAPER">Question papers</option></select></label>
-              <label>Branch <select [(ngModel)]="resourceBranch" (ngModelChange)="resourceSubject = 'ALL'"><option value="ALL">All branches</option><option *ngFor="let b of branches" [value]="b.id">{{ b.code }} · {{ b.name }}</option></select></label>
-              <label>Semester <select [(ngModel)]="resourceSemester" (ngModelChange)="resourceSubject = 'ALL'"><option value="ALL">All semesters</option><option *ngFor="let sem of [1,2,3,4,5,6,7,8]" [value]="sem">Semester {{ sem }}</option></select></label>
-              <label>Subject <select [(ngModel)]="resourceSubject"><option value="ALL">All subjects</option><option *ngFor="let s of filteredTeacherSubjects" [value]="s.id">{{ s.branch?.code }} · Sem {{ s.semester }} · {{ s.name }}</option></select></label>
-              <button type="button" (click)="loadTeacherLibrary()">↻ Refresh library</button>
-            </div>
-            <div class="teacher-resource-list"><article *ngFor="let doc of filteredDocuments" class="teacher-resource-card"><div class="teacher-resource-symbol">▤</div><div class="teacher-resource-details"><strong>{{ doc.title }}</strong><small>{{ doc.subject?.branch?.code }} · Semester {{ doc.subject?.semester }} · {{ doc.subject?.name }}</small><span>{{ doc.type === 'PAPER' ? 'Question paper · ' + (doc.examType || '') + ' ' + (doc.academicYear || '') : 'Study resource · Module ' + (doc.moduleNumber || '—') }}</span></div><button type="button" (click)="openDocument(doc)">View PDF ↗</button></article></div>
-            <div *ngIf="filteredDocuments.length === 0" class="teacher-library-empty">No matching resources yet. Change your filters or publish the first document.</div>
+          <section *ngIf="teacherTab === 'browse'" class="teacher-hierarchy">
+            <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>{{ teacherLibraryType === 'RESOURCE' ? 'Study Resources' : 'Question Papers' }}</h2><p>Browse the same academic folders as students: branch, semester, subject and PDF.</p></div></div>
+            <nav class="teacher-type-switch"><button type="button" [class.selected]="teacherLibraryType === 'RESOURCE'" (click)="chooseTeacherType('RESOURCE')">▤ Study resources</button><button type="button" [class.selected]="teacherLibraryType === 'PAPER'" (click)="chooseTeacherType('PAPER')">▧ Question papers</button></nav>
+            <div class="teacher-breadcrumbs"><button type="button" (click)="teacherStep = 'branch'">Branches</button><ng-container *ngIf="teacherBranch"> / <button type="button" (click)="teacherStep = 'semester'">{{ teacherBranch.name }}</button></ng-container><ng-container *ngIf="teacherSemester"> / <button type="button" (click)="teacherStep = 'subject'">Semester {{ teacherSemester }}</button></ng-container><ng-container *ngIf="teacherSubject"> / <button type="button" (click)="teacherStep = 'folder'">{{ teacherSubject.name }}</button></ng-container><ng-container *ngIf="teacherStep === 'documents'"> / PDFs</ng-container></div>
+            <div *ngIf="teacherStep !== 'branch'" class="teacher-back-row"><button type="button" (click)="teacherBack()">← Back</button></div>
+            <ng-container *ngIf="teacherStep === 'branch'"><h3>Select your branch</h3><p>Choose your academic department.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let b of branches" class="teacher-folder" (click)="teacherBranch = b; teacherStep = 'semester'"><span class="teacher-folder-icon">🏫</span><small>{{ b.code }}</small><strong>{{ b.name }}</strong><em>Open branch →</em></button></div><p *ngIf="!branches.length" class="teacher-library-empty">No branches available.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'semester'"><h3>{{ teacherBranch?.name }}</h3><p>Select your semester.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let sem of [1,2,3,4,5,6,7,8]" class="teacher-folder" (click)="teacherSemester = sem; teacherStep = 'subject'"><span class="teacher-folder-icon">📚</span><strong>Semester {{ sem }}</strong><em>View subjects →</em></button></div></ng-container>
+            <ng-container *ngIf="teacherStep === 'subject'"><h3>Semester {{ teacherSemester }}</h3><p>Select a subject.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let s of teacherFolderSubjects" class="teacher-folder" (click)="teacherSubject = s; teacherStep = 'folder'"><span class="teacher-folder-icon">📘</span><small>{{ s.code }}</small><strong>{{ s.name }}</strong><em>Open subject →</em></button></div><p *ngIf="!teacherFolderSubjects.length" class="teacher-library-empty">No subjects have been added for this semester.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'folder'"><h3>{{ teacherSubject?.name }}</h3><p>{{ teacherLibraryType === 'RESOURCE' ? 'Select a module to view study PDFs.' : 'Select an examination.' }}</p><div class="teacher-folder-grid"><button type="button" *ngFor="let n of (teacherLibraryType === 'RESOURCE' ? [1,2,3,4,5] : [])" class="teacher-folder" (click)="teacherModule = n; teacherStep = 'documents'"><span class="teacher-folder-icon">📁</span><strong>Module {{ n }}</strong><em>View PDFs →</em></button><button type="button" *ngFor="let exam of (teacherLibraryType === 'PAPER' ? ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY'] : [])" class="teacher-folder" (click)="teacherExam = exam; teacherStep = 'year'"><span class="teacher-folder-icon">📁</span><strong>{{ exam }}</strong><em>View years →</em></button></div></ng-container>
+            <ng-container *ngIf="teacherStep === 'year'"><h3>{{ teacherExam }}</h3><p>Select the academic year.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let year of teacherYears" class="teacher-folder" (click)="teacherYear = year; teacherStep = 'documents'"><span class="teacher-folder-icon">📅</span><strong>{{ year }}</strong><em>View PDFs →</em></button></div><p *ngIf="!teacherYears.length" class="teacher-library-empty">No papers uploaded for this exam yet.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'documents'"><h3>{{ teacherLibraryType === 'RESOURCE' ? 'Module ' + teacherModule : teacherExam + ' · ' + teacherYear }}</h3><p>{{ teacherFolderDocuments.length }} PDFs available</p><div class="teacher-resource-list"><article *ngFor="let doc of teacherFolderDocuments" class="teacher-resource-card"><div class="teacher-resource-symbol">PDF</div><div class="teacher-resource-details"><strong>{{ doc.title }}</strong><small>{{ doc.subject?.branch?.code }} · Semester {{ doc.subject?.semester }} · {{ doc.subject?.name }}</small></div><button type="button" (click)="openDocument(doc)">View PDF ↗</button></article></div><div *ngIf="!teacherFolderDocuments.length" class="teacher-library-empty">No PDFs uploaded yet. Use Upload Resource to add one.</div></ng-container>
           </section>
           <section *ngIf="teacherTab === 'upload'">
           <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>Academic resource studio</h2><p>Publish course notes and exam papers for students.</p></div></div>
@@ -131,6 +129,38 @@ export class RolePortalComponent implements OnInit {
   label = this.section === 'staff' ? 'Staff' : 'Teacher';
   user: any;
   subjects: any[] = [];
+  teacherLibraryType: 'RESOURCE' | 'PAPER' = 'RESOURCE';
+  teacherStep: 'branch' | 'semester' | 'subject' | 'folder' | 'year' | 'documents' = 'branch';
+  teacherBranch: any = null;
+  teacherSemester: number | null = null;
+  teacherSubject: any = null;
+  teacherModule: number | null = null;
+  teacherExam = '';
+  teacherYear = '';
+  chooseTeacherType(type: 'RESOURCE' | 'PAPER'): void {
+    this.teacherLibraryType = type; this.teacherStep = 'branch';
+    this.teacherBranch = null; this.teacherSemester = null; this.teacherSubject = null;
+    this.teacherModule = null; this.teacherExam = ''; this.teacherYear = '';
+  }
+  teacherBack(): void {
+    const prev: Record<string, string> = { semester: 'branch', subject: 'semester', folder: 'subject', year: 'folder', documents: this.teacherLibraryType === 'RESOURCE' ? 'folder' : 'year' };
+    this.teacherStep = (prev[this.teacherStep] || 'branch') as typeof this.teacherStep;
+  }
+  get teacherFolderSubjects(): any[] {
+    return this.subjects.filter(s => String(s.branch?.id) === String(this.teacherBranch?.id) && Number(s.semester) === this.teacherSemester);
+  }
+  get teacherYears(): string[] {
+    return [...new Set(this.documents.filter(d => d.type === 'PAPER' &&
+      String(d.subject?.id) === String(this.teacherSubject?.id) &&
+      String(d.examType || '').replace(/\s+/g, ' ').trim().toUpperCase() === this.teacherExam.toUpperCase() &&
+      d.academicYear).map(d => String(d.academicYear)))].sort().reverse();
+  }
+  get teacherFolderDocuments(): any[] {
+    return this.documents.filter(d => String(d.subject?.id) === String(this.teacherSubject?.id) &&
+      d.type === this.teacherLibraryType &&
+      (this.teacherLibraryType === 'RESOURCE' ? Number(d.moduleNumber) === this.teacherModule :
+        String(d.examType || '').replace(/\s+/g, ' ').trim().toUpperCase() === this.teacherExam.toUpperCase() && String(d.academicYear) === this.teacherYear));
+  }
   branches: any[] = [];
   resourceBranch = 'ALL';
   resourceSemester = 'ALL';
