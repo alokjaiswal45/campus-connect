@@ -57,6 +57,10 @@ public class ClaimDisputeController {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
         // Refresh the managed claim after waiting for the item lock.
         entityManager.refresh(claim);
+        if (!"OPEN".equals(claim.item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Item is already resolved; contact an administrator for post-handover issues");
+        }
         if (!List.of("REJECTED", "APPROVED").contains(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This claim cannot be disputed");
         }
