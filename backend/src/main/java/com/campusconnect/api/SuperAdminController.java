@@ -71,8 +71,10 @@ public class SuperAdminController {
         if (!"ADMIN".equals(user.getRole())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Not an admin account");
         }
-        // Revoke administrator access without deleting their account or records.
+        // Preserve audit records but disable authentication; do not grant student access.
         user.setRole("STUDENT");
+        user.setEmailVerified(false);
+        user.setEmailVerifiedAt(null);
         users.save(user);
         return ResponseEntity.noContent().build();
     }
