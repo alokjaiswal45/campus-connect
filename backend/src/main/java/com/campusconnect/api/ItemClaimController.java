@@ -70,9 +70,9 @@ public class ItemClaimController {
 
     @GetMapping("/staff/items/inventory")
     public List<StaffItemView> inventory() {
-        return items.findAll().stream()
-                .filter(item -> "FOUND".equalsIgnoreCase(item.kind))
-                .map(StaffItemView::from).toList();
+        // Desk staff need visibility into all student reports (LOST and FOUND).
+        // Physical intake and ownership claims remain restricted to FOUND items.
+        return items.findAll().stream().map(StaffItemView::from).toList();
     }
 
     @PutMapping("/staff/items/{itemId}/intake")
