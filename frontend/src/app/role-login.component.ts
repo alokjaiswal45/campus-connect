@@ -24,7 +24,7 @@ import { destination } from './portal-routing';
           <button type="submit" [disabled]="loading">{{ loading ? 'Signing in…' : 'Sign in' }}</button>
         </form>
         <p class="role-login-note" *ngIf="section === 'student'">
-          Student registration and email OTP onboarding will be added to this page next.
+          New student? <a routerLink="/student/onboarding">Register and verify your email</a>.
         </p>
         <nav class="role-login-switch">
           <a routerLink="/student/login">Student</a>
