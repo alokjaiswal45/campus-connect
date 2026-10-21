@@ -24,6 +24,23 @@ class ClaimDisputeControllerTest {
             new UsernamePasswordAuthenticationToken("owner@bmsce.ac.in", "unused");
 
     @Test
+    void cannotOpenDisputeAfterCompletedHandover() {
+        LostItem item = new LostItem();
+        item.id = 3L;
+        item.status = "RESOLVED";
+        ItemClaim claim = new ItemClaim();
+        claim.item = item;
+        claim.status = "APPROVED";
+        claim.claimantEmail = "owner@bmsce.ac.in";
+        when(claims.findById(10L)).thenReturn(Optional.of(claim));
+        when(items.lockById(3L)).thenReturn(Optional.of(item));
+        assertThrows(ResponseStatusException.class, () ->
+                controller.open(10L, new ClaimDisputeController.OpenRequest(
+                        "This decision should be reviewed"), student));
+        verify(disputes, never()).save(any());
+    }
+
+    @Test
     void anotherStudentCannotDisputePrivateClaim() {
         ItemClaim claim = new ItemClaim();
         claim.claimantEmail = "different@bmsce.ac.in";
