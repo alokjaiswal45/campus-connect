@@ -10,6 +10,7 @@ import java.util.Optional;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import javax.imageio.ImageIO;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -21,7 +22,7 @@ class ItemImageControllerTest {
     private final ItemImageRepository images = mock(ItemImageRepository.class);
     private final LostItemRepository items = mock(LostItemRepository.class);
     private final ItemClaimRepository claims = mock(ItemClaimRepository.class);
-    private final ItemImageController controller = new ItemImageController(images, items, claims);
+    private final ItemImageController controller = new ItemImageController(images, items, claims, mock(EntityManager.class));
 
     private UsernamePasswordAuthenticationToken login(String email) {
         return new UsernamePasswordAuthenticationToken(email, "unused");
