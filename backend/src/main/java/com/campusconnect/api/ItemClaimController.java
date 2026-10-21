@@ -187,8 +187,9 @@ public class ItemClaimController {
         if (claim.item.custodyAcceptedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item not in staff custody");
         }
-        if (disputes.existsByClaimIdAndStatus(id, "OPEN")) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resolve the open dispute before handover");
+        if (disputes.existsOpenForItem(claim.item.id, "OPEN")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Resolve all open ownership disputes for this item before handover");
         }
         if (!"APPROVED".equals(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Claim not approved or already handed over");
