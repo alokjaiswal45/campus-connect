@@ -56,7 +56,7 @@ class ItemControllerTest {
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
         when(repository.save(item)).thenReturn(item);
         var result = controller.close(1L, student);
-        assertEquals("RESOLVED", result.getBody().status);
+        assertEquals("RESOLVED", result.getBody().status());
     }
 
     @Test
