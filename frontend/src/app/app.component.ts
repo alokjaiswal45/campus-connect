@@ -308,7 +308,7 @@ export class AppComponent implements OnInit {
     const savedAuth = sessionStorage.getItem('cc_auth');
 
     if (!savedAuth) {
-      this.page = 'login';
+      this.router.navigateByUrl('/student/login');
       return;
     }
 
@@ -631,9 +631,10 @@ export class AppComponent implements OnInit {
     this.error = '';
     this.notice = '';
 
-    this.page = 'login';
+    this.page = 'dashboard';
 
     this.resetLibrary();
+    this.router.navigateByUrl(this.router.url.startsWith('/admin/') ? '/admin/login' : '/student/login');
   }
 
   // ==========================================
@@ -1441,13 +1442,8 @@ export class AppComponent implements OnInit {
     this.error = '';
     this.notice = '';
 
-    if (!this.user && page !== 'login') {
-
-      this.page = 'login';
-
-      this.error =
-        'Please sign in with your BMSCE college email to continue.';
-
+    if (page === 'login' || !this.user) {
+      this.router.navigateByUrl(this.router.url.startsWith('/admin/') ? '/admin/login' : '/student/login');
       return;
     }
 
