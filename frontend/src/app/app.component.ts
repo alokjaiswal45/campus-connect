@@ -75,6 +75,38 @@ export class AppComponent implements OnInit {
   }
 
   myClaims: any[] = [];
+  myDisputes: any[] = [];
+  disputeReasons: Record<number, string> = {};
+  adminDisputes: any[] = [];
+  disputeResolutions: Record<number, string> = {};
+  openDispute(claim: any): void {
+    const reason = (this.disputeReasons[claim.id] || '').trim();
+    if (reason.length < 10) { this.error = 'Provide at least 10 characters.'; return; }
+    this.api.post('/claims/' + claim.id + '/disputes', { reason }).subscribe({
+      next: () => { this.notice = 'Dispute submitted for independent review.'; this.loadMyDisputes(); },
+      error: () => this.error = 'Unable to open dispute.'
+    });
+  }
+  loadMyDisputes(): void {
+    this.api.get('/disputes/mine').subscribe({
+      next: data => this.myDisputes = data,
+      error: () => this.error = 'Unable to load disputes.'
+    });
+  }
+  loadAdminDisputes(): void {
+    this.api.get('/admin/disputes').subscribe({
+      next: data => this.adminDisputes = data,
+      error: () => this.error = 'Unable to load admin disputes.'
+    });
+  }
+  resolveDispute(dispute: any, upholdClaim: boolean): void {
+    const resolution = (this.disputeResolutions[dispute.id] || '').trim();
+    if (resolution.length < 10) { this.error = 'Provide a resolution of at least 10 characters.'; return; }
+    this.api.put('/admin/disputes/' + dispute.id + '/resolve', { resolution, upholdClaim }).subscribe({
+      next: () => { this.notice = 'Dispute decision recorded.'; this.loadAdminDisputes(); },
+      error: () => this.error = 'Unable to resolve dispute.'
+    });
+  }
 
   get visibleItems(): any[] {
     return this.items.filter(i => this.lostFilter === 'ALL' ||
@@ -108,6 +140,7 @@ export class AppComponent implements OnInit {
         this.closeItem();
         this.claimAnswer = '';
         this.loadMyClaims();
+        this.loadMyDisputes();
       },
       error: (err: any) => this.error = this.errorMessage(err, 'Unable to submit claim.')
     });
@@ -226,7 +259,7 @@ export class AppComponent implements OnInit {
         this.page = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
         this.loadMyClaims();
-        if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); }
+        if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); this.loadAdminDisputes(); }
       },
 
       error: () => {
