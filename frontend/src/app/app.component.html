@@ -668,7 +668,21 @@
           <p *ngIf="myClaims.length === 0">No claims loaded.</p>
           <article *ngFor="let claim of myClaims">
             <strong>Item #{{ claim.itemId }} · {{ claim.status }}</strong>
+            <div *ngIf="claim.status === 'REJECTED' || claim.status === 'APPROVED'">
+              <label>Dispute the decision
+                <textarea [(ngModel)]="disputeReasons[claim.id]" maxlength="2000"
+                  placeholder="Explain why you believe the claim decision needs review"></textarea>
+              </label>
+              <button class="outline-btn" (click)="openDispute(claim)">Submit dispute</button>
+            </div>
             <p *ngIf="claim.pickupReference">Pickup reference: <strong>{{ claim.pickupReference }}</strong>. Present it with your college ID at the desk.</p>
+          </article>
+          <h3>My disputes</h3>
+          <button class="outline-btn" (click)="loadMyDisputes()">Refresh disputes</button>
+          <article *ngFor="let dispute of myDisputes">
+            <strong>Claim #{{ dispute.claimId }} · {{ dispute.status }}</strong>
+            <p>{{ dispute.reason }}</p>
+            <p *ngIf="dispute.resolution">Decision: {{ dispute.resolution }}</p>
           </article>
         </section>
       </ng-container>
@@ -851,6 +865,20 @@
 
         </div>
 
+        <section class="panel" *ngIf="isAdmin">
+          <h2>Ownership disputes</h2>
+          <button class="outline-btn" (click)="loadAdminDisputes()">Refresh disputes</button>
+          <article *ngFor="let dispute of adminDisputes" class="staff-claim">
+            <strong>Dispute #{{ dispute.id }} · Claim #{{ dispute.claimId }}</strong>
+            <p>Opened by: {{ dispute.openedBy }}</p>
+            <p>{{ dispute.reason }}</p>
+            <label>Written decision
+              <textarea [(ngModel)]="disputeResolutions[dispute.id]" maxlength="2000"></textarea>
+            </label>
+            <button class="outline-btn" (click)="resolveDispute(dispute, true)">Uphold dispute</button>
+            <button class="outline-btn" (click)="resolveDispute(dispute, false)">Dismiss dispute</button>
+          </article>
+        </section>
         <section class="panel" *ngIf="isAdmin">
           <h2>Campus Lost &amp; Found overview</h2>
           <button class="outline-btn" (click)="loadAdminStats()">Refresh analytics</button>
