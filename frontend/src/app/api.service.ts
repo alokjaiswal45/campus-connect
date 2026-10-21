@@ -15,7 +15,11 @@ import { Observable } from 'rxjs';
 export class ApiService {
 
   // Spring Boot backend address
-  readonly base = 'http://localhost:8080/api';
+  // In production, serve the API behind the same origin under /api.
+  // During local Angular development, use the Spring Boot server on port 8080.
+  readonly base = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:8080/api'
+    : window.location.origin + '/api';
 
   constructor(
     private http: HttpClient
@@ -126,6 +130,22 @@ export class ApiService {
         headers: this.getHeaders()
       }
     );
+  }
+
+  uploadDocument(form: FormData): Observable<any> {
+    return this.http.post<any>(this.base + '/documents', form, { headers: this.getHeaders() });
+  }
+
+  uploadImage(path: string, file: File): Observable<any> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<any>(this.base + path, form, { headers: this.getHeaders() });
+  }
+
+  getImage(id: number): Observable<Blob> {
+    return this.http.get(this.base + '/images/' + id, {
+      headers: this.getHeaders(), responseType: 'blob'
+    });
   }
 
   // =====================================

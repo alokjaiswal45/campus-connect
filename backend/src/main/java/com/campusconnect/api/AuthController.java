@@ -78,14 +78,17 @@ private final EmailValidator emailValidator;
         if (request == null ||
                 request.name() == null ||
                 request.name().isBlank() ||
+                request.name().trim().length() > 100 ||
                 request.email() == null ||
+                request.email().length() > 254 ||
                 request.password() == null ||
-                request.password().length() < 8) {
+                request.password().length() < 8 ||
+                request.password().length() > 72) {
 
             return ResponseEntity.badRequest().body(
                     Map.of(
                             "error",
-                            "Enter your name, college email and a password of at least 8 characters"
+                            "Enter a name (up to 100 characters), college email and password (8-72 characters)"
                     )
             );
         }

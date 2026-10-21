@@ -39,6 +39,9 @@ public class SecurityConfig {
     @Value("${app.allowed-email-domain:bmsce.ac.in}")
     private String allowedEmailDomain;
 
+    @Value("${app.cors.allowed-origins:http://localhost:4200,http://localhost:4201}")
+    private String corsAllowedOrigins;
+
     // ======================================
     // PASSWORD ENCODER
     // ======================================
@@ -91,7 +94,7 @@ public class SecurityConfig {
                     );
 
             // Only verified accounts can authenticate.
-            if (!account.isEmailVerified()) {
+            if (!account.isEmailVerified() || !account.isAccountActive()) {
                 throw new UsernameNotFoundException(
                         "Invalid credentials"
                 );
@@ -194,21 +197,31 @@ public class SecurityConfig {
                         )
                         .hasRole("ADMIN")
 
-                        // Upload academic documents.
-                        .requestMatchers(
-                                HttpMethod.POST,
-                                "/api/documents",
-                                "/api/documents/**"
-                        )
-                        .hasRole("ADMIN")
+                        // Upload academic documents: only teachers.
+                        .requestMatchers(HttpMethod.POST, "/api/documents", "/api/documents/**")
+                        .hasRole("TEACHER")
 
                         // Delete academic documents.
-                        .requestMatchers(
-                                HttpMethod.DELETE,
-                                "/api/documents",
-                                "/api/documents/**"
-                        )
-                        .hasRole("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/documents", "/api/documents/**")
+                        .hasRole("TEACHER")
+
+                        // Student reports only; admins and employees may view them.
+                        .requestMatchers(HttpMethod.POST, "/api/items", "/api/items/**")
+                        .hasRole("STUDENT")
+
+                        // Ownership claims and appeals are reserved for student accounts.
+                        .requestMatchers(HttpMethod.POST, "/api/items/*/claims",
+                                "/api/claims/*/disputes", "/api/claims/*/evidence")
+                        .hasRole("STUDENT")
+
+                        // Lost-and-found desk operations.
+                        .requestMatchers("/api/staff/**")
+                        .hasRole("STAFF")
+
+                        // Administrators may review disputes and reports but cannot perform desk handovers.
+                        // Student-only endpoints (future student controllers).
+                        .requestMatchers("/api/student/**")
+                        .hasRole("STUDENT")
 
                         // ======================================
                         // AUTHENTICATED USER ENDPOINTS
@@ -240,10 +253,10 @@ public class SecurityConfig {
         // Only these Angular origins are allowed
         // to read cross-origin API responses.
         config.setAllowedOrigins(
-                List.of(
-                        "http://localhost:4200",
-                        "http://localhost:4201"
-                )
+                java.util.Arrays.stream(corsAllowedOrigins.split(","))
+                        .map(String::trim)
+                        .filter(origin -> !origin.isEmpty())
+                        .toList()
         );
 
         config.setAllowedMethods(

@@ -3,6 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -29,9 +30,6 @@ export class AppComponent implements OnInit {
   password = '';
   name = '';
 
-  registerMode = false;
-  otpMode = false;
-  otp = '';
 
   error = '';
   notice = '';
@@ -41,6 +39,146 @@ export class AppComponent implements OnInit {
   subjects: any[] = [];
   docs: any[] = [];
   items: any[] = [];
+  lostFilter: 'ALL' | 'LOST' | 'FOUND' | 'UNRESOLVED' = 'ALL';
+  selectedItem: any = null;
+  claimAnswer = '';
+  reportPhoto: File | null = null;
+  evidencePhoto: File | null = null;
+  itemPhotoUrls: string[] = [];
+  cardPhotoUrls: Record<number, string> = {};
+  private cardPhotoVersion = 0;
+  private clearCardPhotos(): void {
+    this.cardPhotoVersion++;
+    Object.values(this.cardPhotoUrls).forEach(url => URL.revokeObjectURL(url));
+    this.cardPhotoUrls = {};
+  }
+  private loadCardPhotos(items: any[]): void {
+    this.clearCardPhotos();
+    const version = this.cardPhotoVersion;
+    items.forEach(item => {
+      this.api.get('/items/' + item.id + '/images').subscribe({
+        next: (photos: any[]) => {
+          if (version !== this.cardPhotoVersion || !photos?.length) return;
+          this.api.getImage(photos[0].id).subscribe({
+            next: blob => {
+              if (version !== this.cardPhotoVersion) return;
+              const url = URL.createObjectURL(blob);
+              if (this.cardPhotoUrls[item.id]) URL.revokeObjectURL(this.cardPhotoUrls[item.id]);
+              this.cardPhotoUrls[item.id] = url;
+            }
+          });
+        }
+      });
+    });
+  }
+
+  private revokeItemPhotos(): void {
+    this.itemPhotoUrls.forEach(url => URL.revokeObjectURL(url));
+    this.itemPhotoUrls = [];
+  }
+  chooseReportPhoto(event: Event): void {
+    this.reportPhoto = (event.target as HTMLInputElement).files?.[0] || null;
+  }
+  chooseEvidencePhoto(event: Event): void {
+    this.evidencePhoto = (event.target as HTMLInputElement).files?.[0] || null;
+  }
+  private uploadPhoto(path: string, file: File, message: string): void {
+    this.api.uploadImage(path, file).subscribe({
+      next: () => this.notice = message,
+      error: () => this.error = 'Report saved, but image upload failed. Use JPEG or PNG under 5 MB.'
+    });
+  }
+  private loadItemPhotos(id: number): void {
+    this.revokeItemPhotos();
+    this.api.get('/items/' + id + '/images').subscribe({
+      next: (photos: any[]) => photos.forEach(photo => this.api.getImage(photo.id).subscribe({
+        next: blob => {
+          if (this.selectedItem?.id === id) this.itemPhotoUrls.push(URL.createObjectURL(blob));
+        }
+      }))
+    });
+  }
+
+  myClaims: any[] = [];
+  myDisputes: any[] = [];
+  disputeReasons: Record<number, string> = {};
+  adminDisputes: any[] = [];
+  disputeResolutions: Record<number, string> = {};
+  openDispute(claim: any): void {
+    const reason = (this.disputeReasons[claim.id] || '').trim();
+    if (reason.length < 10) { this.error = 'Provide at least 10 characters.'; return; }
+    this.api.post('/claims/' + claim.id + '/disputes', { reason }).subscribe({
+      next: () => { this.notice = 'Dispute submitted for independent review.'; this.loadMyDisputes(); },
+      error: () => this.error = 'Unable to open dispute.'
+    });
+  }
+  loadMyDisputes(): void {
+    this.api.get('/disputes/mine').subscribe({
+      next: data => this.myDisputes = data,
+      error: () => this.error = 'Unable to load disputes.'
+    });
+  }
+  loadAdminDisputes(): void {
+    this.api.get('/admin/disputes').subscribe({
+      next: data => this.adminDisputes = data,
+      error: () => this.error = 'Unable to load admin disputes.'
+    });
+  }
+  resolveDispute(dispute: any, upholdClaim: boolean): void {
+    const resolution = (this.disputeResolutions[dispute.id] || '').trim();
+    if (resolution.length < 10) { this.error = 'Provide a resolution of at least 10 characters.'; return; }
+    this.api.put('/admin/disputes/' + dispute.id + '/resolve', { resolution, upholdClaim }).subscribe({
+      next: () => { this.notice = 'Dispute decision recorded.'; this.loadAdminDisputes(); },
+      error: () => this.error = 'Unable to resolve dispute.'
+    });
+  }
+
+  get visibleItems(): any[] {
+    return this.items.filter(i => this.lostFilter === 'ALL' ||
+      (this.lostFilter === 'UNRESOLVED' ? i.status === 'OPEN' : i.kind === this.lostFilter))
+      .slice().reverse();
+  }
+
+  openItem(item: any): void {
+    this.selectedItem = item;
+    this.claimAnswer = '';
+    this.loadItemPhotos(item.id);
+  }
+  closeItem(): void { this.selectedItem = null; this.revokeItemPhotos(); }
+
+  submitClaim(): void {
+    if (!this.selectedItem || this.claimAnswer.trim().length < 10) {
+      this.error = 'Describe at least 10 characters of private ownership evidence.';
+      return;
+    }
+    this.error = '';
+    this.api.post('/items/' + this.selectedItem.id + '/claims', {
+      ownershipAnswer: this.claimAnswer.trim()
+    }).subscribe({
+      next: (claim: any) => {
+        this.notice = 'Claim submitted privately for staff review.';
+        if (this.evidencePhoto) {
+          this.uploadPhoto('/claims/' + claim.id + '/evidence', this.evidencePhoto,
+            'Claim and private evidence image submitted.');
+        }
+        this.evidencePhoto = null;
+        this.closeItem();
+        this.claimAnswer = '';
+        this.loadMyClaims();
+        this.loadMyDisputes();
+      },
+      error: (err: any) => this.error = this.errorMessage(err, 'Unable to submit claim.')
+    });
+  }
+
+  loadMyClaims(): void {
+    if (!this.user) return;
+    this.api.get('/claims/mine').subscribe({
+      next: (claims: any[]) => this.myClaims = claims,
+      error: () => this.error = 'Unable to load your claim history.'
+    });
+  }
+
 
   // Existing filters
   branchId = '';
@@ -62,6 +200,64 @@ export class AppComponent implements OnInit {
   selectedLibraryYear = '';
 
   // Admin forms
+  newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
+  campusUsers: any[] = [];
+  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'overview';
+  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'STUDENT';
+  peopleSearch = '';
+  employeeFormOpen = false;
+  employeeSaving = false;
+  employeeTerminatingId: number | null = null;
+  get filteredCampusUsers(): any[] {
+    const query = this.peopleSearch.trim().toLowerCase();
+    return this.campusUsers.filter(u => u.role === this.peopleTab &&
+      (!query || [u.name, u.email, u.role].some((v: string) => String(v || '').toLowerCase().includes(query))));
+  }
+  countPeople(role: string): number { return this.campusUsers.filter(u => u.role === role).length; }
+  selectAdminSection(section: 'overview' | 'people' | 'academics' | 'lostfound'): void {
+    this.adminSection = section;
+    if (section === 'people') this.loadCampusUsers();
+    if (section === 'lostfound') { this.loadAdminStats(); this.loadAdminDisputes(); }
+  }
+
+  adminStats: Record<string, number> = {};
+  loadAdminStats(): void {
+    this.api.get('/admin/analytics').subscribe({
+      next: stats => this.adminStats = stats,
+      error: () => this.error = 'Unable to load campus analytics.'
+    });
+  }
+  createStaff(): void {
+    if (this.employeeSaving) return;
+    this.error = '';
+    this.employeeSaving = true;
+    this.api.post('/admin/users/staff', this.newStaff).subscribe({
+      next: () => {
+        this.employeeSaving = false;
+        this.notice = 'Employee account created.';
+        this.employeeFormOpen = false;
+        this.peopleTab = this.newStaff.role as 'TEACHER' | 'STAFF';
+        this.newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
+        this.loadCampusUsers();
+      },
+      error: (err: any) => { this.employeeSaving = false; this.error = this.errorMessage(err, 'Unable to create employee account.'); }
+    });
+  }
+  terminateEmployee(account: any): void {
+    if (!confirm('Deactivate access for ' + account.email + '? Existing records will be preserved.')) return;
+    this.employeeTerminatingId = account.id;
+    this.api.put('/admin/users/' + account.id + '/terminate', {}).subscribe({
+      next: () => { this.employeeTerminatingId = null; this.notice = 'Employee access deactivated.'; this.loadCampusUsers(); },
+      error: (err: any) => { this.employeeTerminatingId = null; this.error = this.errorMessage(err, 'Unable to deactivate employee.'); }
+    });
+  }
+  loadCampusUsers(): void {
+    this.api.get('/admin/users').subscribe({
+      next: users => this.campusUsers = users,
+      error: () => this.error = 'Unable to load campus users.'
+    });
+  }
+
   newBranch = {
     code: '',
     name: ''
@@ -96,7 +292,8 @@ export class AppComponent implements OnInit {
 
   constructor(
     public api: ApiService,
-    private http: HttpClient
+    private http: HttpClient,
+    private router: Router
   ) {}
 
   // ==========================================
@@ -108,16 +305,22 @@ export class AppComponent implements OnInit {
     const savedAuth = sessionStorage.getItem('cc_auth');
 
     if (!savedAuth) {
-      this.page = 'login';
+      this.router.navigateByUrl('/student/login');
       return;
     }
 
     this.api.get('/auth/me').subscribe({
       next: (user: any) => {
+        if (this.router.url.startsWith('/student/') && user.role !== 'STUDENT') {
+          this.router.navigateByUrl('/' + String(user.role).toLowerCase().replace('_', '-') + '/dashboard');
+          return;
+        }
         this.user = user;
         this.email = user.email || '';
-        this.page = 'dashboard';
+        this.page = user.role === 'ADMIN' ? 'admin' : 'dashboard';
         this.refresh();
+        this.loadMyClaims();
+        if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); this.loadAdminDisputes(); }
       },
 
       error: () => {
@@ -165,236 +368,6 @@ export class AppComponent implements OnInit {
   }
 
   // ==========================================
-  // LOGIN
-  // ==========================================
-
-  login(): void {
-
-    this.error = '';
-    this.notice = '';
-
-    const normalizedEmail = this.email.trim().toLowerCase();
-
-    if (!this.isCollegeEmail(normalizedEmail)) {
-      this.error =
-        'Only @bmsce.ac.in college email addresses are allowed.';
-      return;
-    }
-
-    if (!this.password) {
-      this.error = 'Please enter your password.';
-      return;
-    }
-
-    this.loading = true;
-
-    const auth = btoa(
-      normalizedEmail + ':' + this.password
-    );
-
-    sessionStorage.setItem('cc_auth', auth);
-
-    this.api.get('/auth/me').subscribe({
-
-      next: (user: any) => {
-
-        this.user = user;
-        this.email = normalizedEmail;
-        this.password = '';
-
-        this.page = 'dashboard';
-        this.registerMode = false;
-        this.otpMode = false;
-        this.otp = '';
-
-        this.loading = false;
-        this.notice = 'Welcome, ' + user.name;
-
-        this.refresh();
-      },
-
-      error: (err: any) => {
-
-        sessionStorage.removeItem('cc_auth');
-
-        this.user = null;
-        this.loading = false;
-
-        this.error = err.status === 0
-          ? 'Cannot connect to the backend at localhost:8080.'
-          : err.status === 401
-            ? 'Incorrect credentials or email not verified. Use Verify email if you have not completed OTP verification.'
-            : this.errorMessage(
-                err,
-                'Unable to sign in. Please try again.'
-              );
-      }
-    });
-  }
-
-  // ==========================================
-  // REGISTRATION
-  // ==========================================
-
-  register(): void {
-
-    this.error = '';
-    this.notice = '';
-
-    const normalizedEmail = this.email.trim().toLowerCase();
-
-    if (!this.name.trim()) {
-      this.error = 'Please enter your full name.';
-      return;
-    }
-
-    if (!this.isCollegeEmail(normalizedEmail)) {
-      this.error =
-        'Registration requires a valid @bmsce.ac.in email address.';
-      return;
-    }
-
-    if (this.password.length < 8) {
-      this.error =
-        'Password must contain at least 8 characters.';
-      return;
-    }
-
-    this.loading = true;
-
-    this.api.post('/auth/register', {
-      name: this.name.trim(),
-      email: normalizedEmail,
-      password: this.password
-    }).subscribe({
-
-      next: () => {
-
-        this.loading = false;
-        this.email = normalizedEmail;
-        this.password = '';
-
-        this.registerMode = false;
-        this.otpMode = true;
-        this.otp = '';
-
-        this.notice =
-          'Account created. Request a verification code to activate your account.';
-
-        this.sendOtp();
-      },
-
-      error: (err: any) => {
-
-        this.loading = false;
-
-        this.error = this.errorMessage(
-          err,
-          'Registration failed.'
-        );
-      }
-    });
-  }
-
-  // ==========================================
-  // SEND EMAIL OTP
-  // ==========================================
-
-  sendOtp(): void {
-
-    this.error = '';
-    this.notice = '';
-
-    const normalizedEmail = this.email.trim().toLowerCase();
-
-    if (!this.isCollegeEmail(normalizedEmail)) {
-      this.error =
-        'Enter your valid @bmsce.ac.in college email.';
-      return;
-    }
-
-    this.loading = true;
-
-    this.api.post('/auth/send-otp', {
-      email: normalizedEmail
-    }).subscribe({
-
-      next: () => {
-
-        this.loading = false;
-        this.otpMode = true;
-        this.page = 'login';
-
-        this.notice =
-          'Verification code requested. Check your college email inbox and spam folder.';
-      },
-
-      error: (err: any) => {
-
-        this.loading = false;
-
-        this.error = this.errorMessage(
-          err,
-          'Could not send OTP. Check your email configuration and try again.'
-        );
-      }
-    });
-  }
-
-  // ==========================================
-  // VERIFY EMAIL OTP
-  // ==========================================
-
-  verifyOtp(): void {
-
-    this.error = '';
-    this.notice = '';
-
-    const normalizedEmail = this.email.trim().toLowerCase();
-    const enteredOtp = this.otp.trim();
-
-    if (!this.isCollegeEmail(normalizedEmail)) {
-      this.error = 'Enter your valid BMSCE college email.';
-      return;
-    }
-
-    if (!/^\d{6}$/.test(enteredOtp)) {
-      this.error = 'Enter the six-digit verification code.';
-      return;
-    }
-
-    this.loading = true;
-
-    this.api.post('/auth/verify-otp', {
-      email: normalizedEmail,
-      otp: enteredOtp
-    }).subscribe({
-
-      next: () => {
-
-        this.loading = false;
-
-        this.otpMode = false;
-        this.registerMode = false;
-        this.otp = '';
-
-        this.notice =
-          'Email verified successfully. You can now sign in.';
-      },
-
-      error: (err: any) => {
-
-        this.loading = false;
-
-        this.error = this.errorMessage(
-          err,
-          'Invalid or expired OTP. Please try again.'
-        );
-      }
-    });
-  }
-
-  // ==========================================
   // LOGOUT
   // ==========================================
 
@@ -408,18 +381,18 @@ export class AppComponent implements OnInit {
     this.subjects = [];
     this.docs = [];
     this.items = [];
+    this.clearCardPhotos();
+    this.revokeItemPhotos();
 
     this.password = '';
-    this.otp = '';
-    this.otpMode = false;
-    this.registerMode = false;
 
     this.error = '';
     this.notice = '';
 
-    this.page = 'login';
+    this.page = 'dashboard';
 
     this.resetLibrary();
+    this.router.navigateByUrl(this.router.url.startsWith('/admin/') ? '/admin/login' : '/student/login');
   }
 
   // ==========================================
@@ -775,6 +748,7 @@ export class AppComponent implements OnInit {
         this.items = Array.isArray(response)
           ? response
           : [];
+        this.loadCardPhotos(this.items);
       },
 
       error: () => {
@@ -1069,9 +1043,14 @@ export class AppComponent implements OnInit {
 
     this.api.post('/items', this.newItem).subscribe({
 
-      next: () => {
+      next: (item: any) => {
 
         this.notice = 'Item posted successfully.';
+        if (this.reportPhoto) {
+          this.uploadPhoto('/items/' + item.id + '/images', this.reportPhoto,
+            'Item and photograph posted successfully.');
+          this.reportPhoto = null;
+        }
 
         this.newItem = {
           title: '',
@@ -1221,13 +1200,8 @@ export class AppComponent implements OnInit {
     this.error = '';
     this.notice = '';
 
-    if (!this.user && page !== 'login') {
-
-      this.page = 'login';
-
-      this.error =
-        'Please sign in with your BMSCE college email to continue.';
-
+    if (page === 'login' || !this.user) {
+      this.router.navigateByUrl(this.router.url.startsWith('/admin/') ? '/admin/login' : '/student/login');
       return;
     }
 
