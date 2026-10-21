@@ -106,8 +106,28 @@ public class ClaimDisputeController {
                 || auth.getName().equalsIgnoreCase(dispute.claim.reviewedBy)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Independent administrator review required");
         }
-        // Administrative dispute resolution records a decision; it never silently transfers custody
-        // or overrides a completed handover. Staff must use the standard verified handover workflow.
+        // An upheld rejection reopens the claim for an independent staff review.
+        // It never grants ownership or transfers custody automatically.
+        if (request.upholdClaim() && "REJECTED".equals(dispute.claim.status)) {
+            entityManager.refresh(dispute.claim);
+            if (!"REJECTED".equals(dispute.claim.status)
+                    || !"OPEN".equals(dispute.claim.item.status)) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Claim or item status changed during dispute review");
+            }
+            if (claims.existsByItemIdAndStatusIn(dispute.claim.item.id,
+                    List.of("APPROVED", "HANDED_OVER"))) {
+                throw new ResponseStatusException(HttpStatus.CONFLICT,
+                        "Cannot reopen: item is assigned to another claimant");
+            }
+            dispute.claim.status = "PENDING";
+            dispute.claim.reviewedBy = null;
+            dispute.claim.reviewedAt = null;
+            dispute.claim.pickupReference = null;
+            claims.save(dispute.claim);
+        }
+        // An upheld dispute of an APPROVED claim records the decision without
+        // changing custody; all handovers still require staff ID/reference verification.
         dispute.status = request.upholdClaim() ? "UPHELD" : "DISMISSED";
         dispute.resolution = request.resolution().trim();
         dispute.resolvedBy = auth.getName();
