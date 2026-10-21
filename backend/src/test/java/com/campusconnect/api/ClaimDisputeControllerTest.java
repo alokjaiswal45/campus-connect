@@ -7,6 +7,7 @@ import com.campusconnect.repo.ClaimDisputeRepository;
 import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.util.Optional;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,7 +19,7 @@ class ClaimDisputeControllerTest {
     private final ItemClaimRepository claims = mock(ItemClaimRepository.class);
     private final LostItemRepository items = mock(LostItemRepository.class);
     private final ClaimDisputeController controller =
-            new ClaimDisputeController(disputes, claims, items);
+            new ClaimDisputeController(disputes, claims, items, mock(EntityManager.class));
     private final UsernamePasswordAuthenticationToken student =
             new UsernamePasswordAuthenticationToken("owner@bmsce.ac.in", "unused");
 
