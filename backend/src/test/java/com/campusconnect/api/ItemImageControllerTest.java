@@ -7,6 +7,9 @@ import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.ItemImageRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.util.Optional;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import javax.imageio.ImageIO;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +25,24 @@ class ItemImageControllerTest {
 
     private UsernamePasswordAuthenticationToken login(String email) {
         return new UsernamePasswordAuthenticationToken(email, "unused");
+    }
+
+    @Test
+    void validPngCanBeSanitizedAndSaved() throws Exception {
+        LostItem item = new LostItem();
+        item.id = 2L;
+        item.postedBy = "finder@bmsce.ac.in";
+        item.status = "OPEN";
+        when(items.lockById(2L)).thenReturn(Optional.of(item));
+        when(images.save(any(ItemImage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        BufferedImage image = new BufferedImage(2, 2, BufferedImage.TYPE_INT_RGB);
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        ImageIO.write(image, "png", out);
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png", out.toByteArray());
+        var result = controller.uploadItem(2L, file, login("finder@bmsce.ac.in"));
+        assertEquals(2L, result.itemId());
+        verify(images).save(argThat(saved -> "image/png".equals(saved.contentType)
+                && saved.data != null && saved.data.length > 0));
     }
 
     @Test
