@@ -847,12 +847,23 @@
         <div class="page-heading">
           <div class="eyebrow">ADMINISTRATOR WORKSPACE</div>
           <h1>Manage Campus</h1>
-          <p>
-            Add branches, subjects, and academic documents
-            — all without changing code.
-          </p>
+          <p>Manage your campus structure, people, and Lost &amp; Found oversight.</p>
         </div>
 
+        <nav class="admin-section-nav" *ngIf="isAdmin" aria-label="Administration sections">
+          <button [class.active]="adminSection === 'overview'" (click)="selectAdminSection('overview')">▦ Overview</button>
+          <button [class.active]="adminSection === 'people'" (click)="selectAdminSection('people')">♙ People &amp; access</button>
+          <button [class.active]="adminSection === 'academics'" (click)="selectAdminSection('academics')">▤ Branches &amp; subjects</button>
+          <button [class.active]="adminSection === 'lostfound'" (click)="selectAdminSection('lostfound')">◇ Lost &amp; Found review</button>
+        </nav>
+        <section *ngIf="isAdmin && adminSection === 'overview'" class="admin-overview">
+          <div class="admin-overview-intro"><h2>Campus administration</h2><p>Select a workspace to manage accounts, academics, or Lost &amp; Found reviews.</p></div>
+          <div class="admin-overview-grid">
+            <button (click)="selectAdminSection('people')"><span>♙</span><strong>People &amp; access</strong><small>Browse students, teachers, and staff; create or terminate employee access.</small><b>Open directory ↗</b></button>
+            <button (click)="selectAdminSection('academics')"><span>▤</span><strong>Academic structure</strong><small>Organize branches, subjects, and semesters.</small><b>Manage academics ↗</b></button>
+            <button (click)="selectAdminSection('lostfound')"><span>◇</span><strong>Lost &amp; Found oversight</strong><small>Review reports, analytics, and ownership disputes.</small><b>Review cases ↗</b></button>
+          </div>
+        </section>
         <div *ngIf="!isAdmin" class="panel empty">
 
           Administrator access required.
@@ -865,7 +876,7 @@
 
         </div>
 
-        <section class="panel" *ngIf="isAdmin">
+        <section class="panel" *ngIf="isAdmin && adminSection === 'lostfound'">
           <h2>Ownership disputes</h2>
           <button class="outline-btn" (click)="loadAdminDisputes()">Refresh disputes</button>
           <article *ngFor="let dispute of adminDisputes" class="staff-claim">
@@ -889,28 +900,52 @@
             </div>
           </div>
         </section>
-        <section class="panel form-panel" *ngIf="isAdmin">
-          <h2>Employee management</h2>
-          <p>Provision teachers for academic resources or desk staff for Lost &amp; Found. Deactivating employees preserves their history.</p>
-          <label>Employee role
-            <select [(ngModel)]="newStaff.role"><option value="TEACHER">Teacher · Academic resources</option><option value="STAFF">Staff · Lost &amp; Found desk</option></select>
-          </label>
-          <label>Full name <input [(ngModel)]="newStaff.name" maxlength="255"></label>
-          <label>College email <input [(ngModel)]="newStaff.email" type="email"></label>
-          <label>Temporary password (minimum 12 characters)
-            <input [(ngModel)]="newStaff.password" type="password" autocomplete="new-password">
-          </label>
-          <button class="primary-btn" [disabled]="!newStaff.name.trim() || !newStaff.email.trim() || newStaff.password.length < 12"
-            (click)="createStaff()">Create employee</button>
-          <button class="outline-btn" (click)="loadCampusUsers()">Refresh users</button>
-          <div class="mini-list">
-            <div *ngFor="let account of campusUsers">
-              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }} · {{ account.accountActive ? 'Active' : 'Terminated' }}</span>
-              <button class="delete-btn" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" (click)="terminateEmployee(account)">Terminate access</button>
-            </div>
+        <section *ngIf="isAdmin && adminSection === 'people'" class="admin-people">
+          <div class="admin-people-heading">
+            <div><div class="eyebrow">CAMPUS DIRECTORY</div><h2>People &amp; access</h2><p>Manage student visibility and employee access from one organized workspace.</p></div>
+            <button class="primary-btn" (click)="employeeFormOpen = !employeeFormOpen; error = ''">{{ employeeFormOpen ? 'Close form ×' : '+ Add employee' }}</button>
           </div>
+
+          <div class="admin-people-metrics">
+            <button type="button" [class.selected]="peopleTab === 'STUDENT'" (click)="peopleTab = 'STUDENT'"><span class="metric-symbol">🎓</span><strong>{{ countPeople('STUDENT') }}</strong><small>Students</small></button>
+            <button type="button" [class.selected]="peopleTab === 'TEACHER'" (click)="peopleTab = 'TEACHER'"><span class="metric-symbol">📚</span><strong>{{ countPeople('TEACHER') }}</strong><small>Teachers</small></button>
+            <button type="button" [class.selected]="peopleTab === 'STAFF'" (click)="peopleTab = 'STAFF'"><span class="metric-symbol">🛡</span><strong>{{ countPeople('STAFF') }}</strong><small>Lost &amp; Found staff</small></button>
+          </div>
+
+          <section class="panel admin-employee-form" *ngIf="employeeFormOpen">
+            <div class="section-heading"><div><h2>New employee</h2><p>Teachers upload academic materials; desk staff process Lost &amp; Found cases.</p></div></div>
+            <form (ngSubmit)="createStaff()" class="admin-employee-fields">
+              <label>Employee type <select name="employeeRole" [(ngModel)]="newStaff.role" required><option value="TEACHER">Teacher · Academic resources</option><option value="STAFF">Staff · Lost &amp; Found</option></select></label>
+              <label>Full name <input name="employeeName" [(ngModel)]="newStaff.name" maxlength="100" placeholder="Full name" required></label>
+              <label>College email <input name="employeeEmail" [(ngModel)]="newStaff.email" type="email" placeholder="name@bmsce.ac.in" required></label>
+              <label>Temporary password <input name="employeePassword" [(ngModel)]="newStaff.password" type="password" minlength="12" maxlength="72" autocomplete="new-password" placeholder="12–72 characters" required></label>
+              <div class="admin-form-actions"><button type="button" class="outline-btn" (click)="employeeFormOpen = false">Cancel</button><button type="submit" class="primary-btn" [disabled]="employeeSaving || !newStaff.name.trim() || !isCollegeEmail(newStaff.email) || newStaff.password.length < 12 || newStaff.password.length > 72">{{ employeeSaving ? 'Creating…' : 'Create employee →' }}</button></div>
+            </form>
+          </section>
+
+          <section class="panel admin-directory">
+            <div class="admin-directory-toolbar">
+              <div><h2>{{ peopleTab === 'STUDENT' ? 'Student directory' : peopleTab === 'TEACHER' ? 'Teachers' : 'Lost &amp; Found staff' }}</h2><p>{{ filteredCampusUsers.length }} account(s) in this view</p></div>
+              <div class="admin-directory-actions"><input [(ngModel)]="peopleSearch" placeholder="Search by name or email" aria-label="Search people"><button class="outline-btn" (click)="loadCampusUsers()">↻ Refresh</button></div>
+            </div>
+            <div class="admin-table-scroll">
+              <table class="admin-people-table">
+                <thead><tr><th>Person</th><th>Role</th><th>Account status</th><th>Action</th></tr></thead>
+                <tbody>
+                  <tr *ngFor="let account of filteredCampusUsers">
+                    <td><div class="admin-person"><span class="admin-person-avatar">{{ account.name?.[0] || '?' }}</span><div><strong>{{ account.name }}</strong><small>{{ account.email }}</small></div></div></td>
+                    <td><span class="admin-role-tag">{{ account.role === 'STAFF' ? 'Lost &amp; Found Staff' : account.role === 'TEACHER' ? 'Teacher' : 'Student' }}</span></td>
+                    <td><span class="admin-account-status" [class.inactive]="!account.accountActive || !account.emailVerified">{{ !account.accountActive ? 'Terminated' : account.emailVerified ? 'Active' : 'Unverified' }}</span></td>
+                    <td><button type="button" class="admin-terminate" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" [disabled]="employeeTerminatingId === account.id" (click)="terminateEmployee(account)">{{ employeeTerminatingId === account.id ? 'Terminating…' : 'Terminate access' }}</button><span class="admin-no-action" *ngIf="account.role === 'STUDENT' || !account.accountActive">—</span></td>
+                  </tr>
+                  <tr *ngIf="filteredCampusUsers.length === 0"><td colspan="4" class="admin-directory-empty">No matching accounts. Try another search or choose a different role.</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="admin-directory-footnote">Termination disables sign-in but preserves documents, case history, and audit records. Students are view-only here.</p>
+          </section>
         </section>
-        <div class="admin-grid" *ngIf="isAdmin">
+        <div class="admin-grid" *ngIf="isAdmin && adminSection === 'academics'">
 
           <!-- ADD BRANCH -->
           <div class="panel form-panel">
