@@ -102,6 +102,9 @@ public class ItemImageController {
         }
         items.lockById(claim.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND));
+        if (!"OPEN".equals(claim.item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already resolved");
+        }
         if (!"PENDING".equals(claim.status)) throw new ResponseStatusException(HttpStatus.CONFLICT);
         if (!images.findByClaimIdOrderByCreatedAtAsc(claimId).isEmpty()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Only one evidence image allowed");
