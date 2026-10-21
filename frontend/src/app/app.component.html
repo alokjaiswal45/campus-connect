@@ -629,13 +629,17 @@
         <div class="panel empty" *ngIf="visibleItems.length === 0">No matching reports yet.</div>
 
         <div class="panel lf-details" *ngIf="selectedItem as i">
-          <button class="outline-btn" (click)="selectedItem = null">Close details ×</button>
+          <button class="outline-btn" (click)="closeItem()">Close details ×</button>
           <h2>{{ i.title }}</h2>
+          <div class="lf-photo-gallery"><img *ngFor="let url of itemPhotoUrls" [src]="url" alt="Uploaded item photograph"></div>
           <p>{{ i.description }}</p>
           <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
           <div *ngIf="user && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
             <h3>Claim this item</h3>
             <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
+            <label>Optional private proof photo (JPEG, PNG or WebP, max 5 MB)
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseEvidencePhoto($event)">
+            </label>
             <textarea [(ngModel)]="claimAnswer" maxlength="2000" placeholder="Describe identifying details only the owner would know"></textarea>
             <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10">Submit private claim</button>
           </div>
@@ -651,6 +655,9 @@
             <label>Category <input [(ngModel)]="newItem.category" maxlength="100" placeholder="Electronics"></label>
             <label>Location <input [(ngModel)]="newItem.location" maxlength="255" placeholder="Library, second floor"></label>
             <label>Description <textarea [(ngModel)]="newItem.description" maxlength="3000" placeholder="Describe the item"></textarea></label>
+            <label>Optional item photograph (JPEG, PNG or WebP, max 5 MB)
+              <input type="file" accept="image/jpeg,image/png,image/webp" (change)="chooseReportPhoto($event)">
+            </label>
             <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim()">Post report →</button>
           </ng-container>
           <ng-template #lfLogin><p>Sign in to report an item.</p><button class="primary-btn" (click)="nav('login')">Sign in</button></ng-template>
