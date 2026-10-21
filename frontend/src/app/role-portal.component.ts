@@ -37,6 +37,7 @@ import { ApiService } from './api.service';
           </div>
           <div class="staff-inventory">
             <button type="button" *ngFor="let item of filteredInventory" class="inventory-entry" [class.selected]="item.id === itemId" (click)="selectItem(item)">
+              <div class="staff-report-thumb"><img *ngIf="staffPhotos[item.id]" [src]="staffPhotos[item.id]" [alt]="'Photo of ' + item.title" loading="lazy"><span *ngIf="!staffPhotos[item.id]">{{ item.kind === 'LOST' ? '🔎' : '📦' }}</span></div>
               <span class="staff-item-kind" [class.is-lost]="item.kind === 'LOST'">{{ item.kind }}</span>
               <strong>{{ item.title }}</strong>
               <small>{{ item.description }}</small>
@@ -47,7 +48,7 @@ import { ApiService } from './api.service';
           <p *ngIf="filteredInventory.length === 0" class="teacher-library-empty">No reports match this filter.</p>
           <section *ngIf="selectedStaffItem as selected" class="staff-case-panel">
             <div class="portal-section-head"><span class="portal-icon">⌘</span><div><h2>{{ selected.title }} <small>#{{ selected.id }}</small></h2><p>{{ selected.kind }} report · {{ selected.status }} · Reported by {{ selected.postedBy }}</p></div></div>
-            <p>{{ selected.description }}</p>
+            <div class="staff-case-overview"><div class="staff-case-photo"><img *ngIf="staffPhotos[selected.id]" [src]="staffPhotos[selected.id]" [alt]="'Uploaded photo of ' + selected.title"><span *ngIf="!staffPhotos[selected.id]">📦</span></div><div><h3>Report details</h3><p>{{ selected.description }}</p><p><strong>Category:</strong> {{ selected.category }}</p><p><strong>Reported by:</strong> {{ selected.postedBy }}</p><p><strong>Reported on:</strong> {{ selected.createdAt | date:'medium' }}</p></div></div>
             <p><strong>Reported location:</strong> {{ selected.location || 'Not specified' }}</p>
             <ng-container *ngIf="selected.kind === 'LOST'">
               <p class="staff-info-note">This is a LOST report. You can review it, but physical intake and claimant handover apply only to FOUND items.</p>
@@ -214,6 +215,28 @@ export class RolePortalComponent implements OnInit {
   itemId: number | null = null;
   storageLocation = '';
   evidenceUrls: Record<number, string> = {};
+  staffPhotos: Record<number, string> = {};
+  private staffPhotoGeneration = 0;
+  private loadStaffPhotos(items: any[]): void {
+    const generation = ++this.staffPhotoGeneration;
+    Object.values(this.staffPhotos).forEach(url => URL.revokeObjectURL(url));
+    this.staffPhotos = {};
+    items.forEach(item => {
+      this.api.get('/items/' + item.id + '/images').subscribe({
+        next: (images: any[]) => {
+          if (generation !== this.staffPhotoGeneration || !images?.length) return;
+          this.api.getImage(images[0].id).subscribe({
+            next: blob => {
+              if (generation !== this.staffPhotoGeneration) return;
+              const url = URL.createObjectURL(blob);
+              if (this.staffPhotos[item.id]) URL.revokeObjectURL(this.staffPhotos[item.id]);
+              this.staffPhotos[item.id] = url;
+            }
+          });
+        }
+      });
+    });
+  }
   busy = false;
   notice = '';
   error = '';
@@ -270,7 +293,7 @@ export class RolePortalComponent implements OnInit {
   }
   loadItems(): void {
     this.api.get('/staff/items/inventory').subscribe({
-      next: (items: any[]) => this.inventory = items,
+      next: (items: any[]) => { this.inventory = items; this.loadStaffPhotos(items); },
       error: () => this.error = 'Unable to load inventory.'
     });
   }
