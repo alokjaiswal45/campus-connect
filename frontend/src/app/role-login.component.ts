@@ -28,9 +28,9 @@ import { destination } from './portal-routing';
         </p>
         <nav class="role-login-switch">
           <a routerLink="/student/login">Student</a>
+          <a routerLink="/teacher/login">Teacher</a>
           <a routerLink="/staff/login">Staff</a>
           <a routerLink="/admin/login">Admin</a>
-          <a routerLink="/super-admin/login">Super Admin</a>
         </nav>
       </section>
     </main>
