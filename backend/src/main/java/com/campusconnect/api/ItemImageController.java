@@ -7,6 +7,9 @@ import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.ItemImageRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.util.List;
+import java.io.ByteArrayInputStream;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -51,11 +54,18 @@ public class ItemImageController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image must be 1 byte to 5 MB");
         }
         byte[] bytes = file.getBytes();
+        String detectedType = verifiedType(bytes);
+        BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(bytes));
+        if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0
+                || (long) decoded.getWidth() * decoded.getHeight() > 25_000_000L) {
+            throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
+                    "Invalid image or image dimensions too large");
+        }
         ItemImage image = new ItemImage();
         image.item = item;
         image.claim = claim;
         image.uploadedBy = auth.getName();
-        image.contentType = verifiedType(bytes);
+        image.contentType = detectedType;
         image.data = bytes;
         return images.save(image);
     }
