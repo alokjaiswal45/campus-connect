@@ -60,7 +60,7 @@ export class AppComponent implements OnInit {
   private uploadPhoto(path: string, file: File, message: string): void {
     this.api.uploadImage(path, file).subscribe({
       next: () => this.notice = message,
-      error: () => this.error = 'Report saved, but image upload failed. Use JPEG, PNG or WebP under 5 MB.'
+      error: () => this.error = 'Report saved, but image upload failed. Use JPEG or PNG under 5 MB.'
     });
   }
   private loadItemPhotos(id: number): void {
