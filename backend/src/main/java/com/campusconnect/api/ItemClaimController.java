@@ -58,6 +58,13 @@ public class ItemClaimController {
         return existing;
     }
 
+    @GetMapping("/staff/items/inventory")
+    public List<LostItem> inventory() {
+        return items.findAll().stream()
+                .filter(item -> "FOUND".equalsIgnoreCase(item.kind))
+                .toList();
+    }
+
     @PutMapping("/staff/items/{itemId}/intake")
     @Transactional
     public LostItem intake(@PathVariable Long itemId, @RequestBody IntakeRequest request,
