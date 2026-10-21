@@ -4,7 +4,6 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
-import { destination } from './portal-routing';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -289,7 +288,7 @@ export class AppComponent implements OnInit {
     this.api.get('/auth/me').subscribe({
       next: (user: any) => {
         if (this.router.url.startsWith('/student/') && user.role !== 'STUDENT') {
-          this.router.navigateByUrl(destination(user.role));
+          this.router.navigateByUrl('/' + String(user.role).toLowerCase().replace('_', '-') + '/dashboard');
           return;
         }
         this.user = user;
