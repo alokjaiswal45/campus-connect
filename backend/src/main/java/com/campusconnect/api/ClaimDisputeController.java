@@ -6,6 +6,7 @@ import com.campusconnect.repo.ClaimDisputeRepository;
 import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.time.Instant;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import org.springframework.http.*;
 import org.springframework.security.core.Authentication;
@@ -19,12 +20,14 @@ public class ClaimDisputeController {
     private final ClaimDisputeRepository disputes;
     private final ItemClaimRepository claims;
     private final LostItemRepository items;
+    private final EntityManager entityManager;
 
     public ClaimDisputeController(ClaimDisputeRepository disputes, ItemClaimRepository claims,
-            LostItemRepository items) {
+            LostItemRepository items, EntityManager entityManager) {
         this.disputes = disputes;
         this.claims = claims;
         this.items = items;
+        this.entityManager = entityManager;
     }
 
     public record OpenRequest(String reason) {}
@@ -52,9 +55,8 @@ public class ClaimDisputeController {
         }
         items.lockById(claim.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        // Refresh after obtaining the item lock to avoid stale claim status.
-        claim = claims.findById(claimId).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
+        // Refresh the managed claim after waiting for the item lock.
+        entityManager.refresh(claim);
         if (!List.of("REJECTED", "APPROVED").contains(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This claim cannot be disputed");
         }
