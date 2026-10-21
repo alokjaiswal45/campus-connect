@@ -47,3 +47,7 @@ Staff cannot complete handover while **any** ownership appeal for the item is OP
 ## Item closure and claim approval safeguards
 
 An item poster cannot close an item while ownership claims remain PENDING or APPROVED, or while any appeal is OPEN. Staff also cannot approve a claim while an appeal for any claimant on the same item remains OPEN. These checks occur under the item row lock to prevent bypass through simultaneous requests.
+
+## Finalized item immutability
+
+Once a lost-and-found item is RESOLVED, repeat close requests return HTTP 409. Ordinary ownership disputes cannot be opened or resolved after final handover, and no appeal can reopen a finalized item's custody state. Post-handover complaints require a separate administrator-led process outside this normal ownership appeal workflow.
