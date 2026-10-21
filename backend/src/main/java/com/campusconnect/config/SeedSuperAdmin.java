@@ -14,7 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 @Configuration
 public class SeedSuperAdmin {
     @Bean
-    CommandLineRunner seedSuperAdmin(UserRepository users, PasswordEncoder encoder,
+    CommandLineRunner bootstrapSuperAdminAccount(UserRepository users, PasswordEncoder encoder,
             @Value("${app.super-admin.email:}") String configuredEmail,
             @Value("${app.super-admin.password:}") String configuredPassword,
             @Value("${app.allowed-email-domain:bmsce.ac.in}") String configuredDomain) {
