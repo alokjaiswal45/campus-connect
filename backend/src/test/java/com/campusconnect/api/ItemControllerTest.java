@@ -76,6 +76,18 @@ class ItemControllerTest {
     }
 
     @Test
+    void cannotCloseAnAlreadyResolvedItem() {
+        LostItem item = new LostItem();
+        item.postedBy = "student@bmsce.ac.in";
+        item.status = "RESOLVED";
+        when(repository.lockById(1L)).thenReturn(Optional.of(item));
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> controller.close(1L, student));
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void ownerCanCloseItem() {
         LostItem item = new LostItem();
         item.postedBy = "student@bmsce.ac.in";
