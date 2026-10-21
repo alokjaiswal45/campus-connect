@@ -584,7 +584,7 @@
 
               <div>📂</div>
               <h3>No PDFs uploaded yet</h3>
-              <p>Ask an administrator to upload materials to this folder.</p>
+              <p>Ask a teacher to upload materials to this folder.</p>
 
             </div>
 
@@ -620,7 +620,7 @@
               <small>📍 {{ i.location }} · {{ i.category }}</small>
               <div class="lf-actions">
                 <button class="outline-btn" (click)="openItem(i)">View details</button>
-                <button class="outline-btn" *ngIf="user && (user.email === i.postedBy || isAdmin) && i.status === 'OPEN'"
+                <button class="outline-btn" *ngIf="user?.role === 'STUDENT' && user.email === i.postedBy && i.status === 'OPEN'"
                   (click)="resolve(i.id)">Mark resolved</button>
               </div>
             </div>
@@ -634,7 +634,7 @@
           <div class="lf-photo-gallery"><img *ngFor="let url of itemPhotoUrls" [src]="url" alt="Uploaded item photograph"></div>
           <p>{{ i.description }}</p>
           <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
-          <div *ngIf="user && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
+          <div *ngIf="user?.role === 'STUDENT' && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
             <h3>Claim this item</h3>
             <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
             <label>Optional private proof photo (JPEG or PNG, max 5 MB)
@@ -647,7 +647,7 @@
 
         <div class="panel form-panel lf-report">
           <h2>Report an item</h2>
-          <ng-container *ngIf="user; else lfLogin">
+          <ng-container *ngIf="user?.role === 'STUDENT'; else lfLogin">
             <label>Report type
               <select [(ngModel)]="newItem.kind"><option value="LOST">I lost something</option><option value="FOUND">I found something</option></select>
             </label>
@@ -660,10 +660,10 @@
             </label>
             <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim()">Post report →</button>
           </ng-container>
-          <ng-template #lfLogin><p>Sign in to report an item.</p><button class="primary-btn" (click)="nav('login')">Sign in</button></ng-template>
+          <ng-template #lfLogin><p>Only students can submit Lost &amp; Found reports. Administrators can review reports in the administration dashboard.</p></ng-template>
         </div>
 
-        <section class="panel lf-claims" *ngIf="user">
+        <section class="panel lf-claims" *ngIf="user?.role === 'STUDENT'">
           <div class="section-heading"><h2>My ownership claims</h2><button class="outline-btn" (click)="loadMyClaims()">Refresh</button></div>
           <p *ngIf="myClaims.length === 0">No claims loaded.</p>
           <article *ngFor="let claim of myClaims">
@@ -890,19 +890,23 @@
           </div>
         </section>
         <section class="panel form-panel" *ngIf="isAdmin">
-          <h2>Staff accounts</h2>
-          <p>Create authorized staff accounts. Public staff registration is disabled.</p>
+          <h2>Employee management</h2>
+          <p>Provision teachers for academic resources or desk staff for Lost &amp; Found. Deactivating employees preserves their history.</p>
+          <label>Employee role
+            <select [(ngModel)]="newStaff.role"><option value="TEACHER">Teacher · Academic resources</option><option value="STAFF">Staff · Lost &amp; Found desk</option></select>
+          </label>
           <label>Full name <input [(ngModel)]="newStaff.name" maxlength="255"></label>
           <label>College email <input [(ngModel)]="newStaff.email" type="email"></label>
           <label>Temporary password (minimum 12 characters)
             <input [(ngModel)]="newStaff.password" type="password" autocomplete="new-password">
           </label>
           <button class="primary-btn" [disabled]="!newStaff.name.trim() || !newStaff.email.trim() || newStaff.password.length < 12"
-            (click)="createStaff()">Create staff account</button>
+            (click)="createStaff()">Create employee</button>
           <button class="outline-btn" (click)="loadCampusUsers()">Refresh users</button>
           <div class="mini-list">
             <div *ngFor="let account of campusUsers">
-              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }}</span>
+              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }} · {{ account.emailVerified ? 'Active' : 'Inactive' }}</span>
+              <button class="delete-btn" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.emailVerified" (click)="terminateEmployee(account)">Terminate access</button>
             </div>
           </div>
         </section>
@@ -1015,118 +1019,7 @@
 
           </div>
 
-          <!-- UPLOAD PDF -->
-          <div class="panel form-panel upload-panel">
 
-            <h2>03 · Upload academic PDF</h2>
-
-            <p class="muted">
-              Upload notes or previous question papers (max 20 MB).
-            </p>
-
-            <label>
-              Subject
-
-              <select [(ngModel)]="newDoc.subjectId">
-
-                <option value="">Select subject</option>
-
-                <option
-                  *ngFor="let s of subjects"
-                  [value]="s.id">
-                  {{ s.branch?.code }}
-                  · Sem {{ s.semester }}
-                  · {{ s.name }}
-                </option>
-
-              </select>
-            </label>
-
-            <label>
-              Document title
-
-              <input
-                [(ngModel)]="newDoc.title"
-                placeholder="e.g. Data Structures Module 1 Notes">
-            </label>
-
-            <label>
-              Document category
-
-              <select [(ngModel)]="newDoc.type">
-                <option value="RESOURCE">Study resource</option>
-                <option value="PAPER">Question paper</option>
-              </select>
-            </label>
-
-            <!-- MODULE -->
-            <label *ngIf="newDoc.type === 'RESOURCE'">
-              Module
-
-              <select [(ngModel)]="newDoc.moduleNumber">
-
-                <option value="">Select module</option>
-                <option [ngValue]="1">Module 1</option>
-                <option [ngValue]="2">Module 2</option>
-                <option [ngValue]="3">Module 3</option>
-                <option [ngValue]="4">Module 4</option>
-                <option [ngValue]="5">Module 5</option>
-
-              </select>
-            </label>
-
-            <!-- EXAM TYPE -->
-            <label *ngIf="newDoc.type === 'PAPER'">
-              Exam type
-
-              <select [(ngModel)]="newDoc.examType">
-
-                <option value="">Select exam</option>
-                <option value="CIE 1">CIE 1</option>
-                <option value="CIE 2">CIE 2</option>
-                <option value="CIE 3">CIE 3</option>
-                <option value="SEE">SEE</option>
-                <option value="SUPPLEMENTARY">Supplementary Exam</option>
-
-              </select>
-            </label>
-
-            <!-- ACADEMIC YEAR -->
-            <label *ngIf="newDoc.type === 'PAPER'">
-              Exam year
-
-              <input
-                [(ngModel)]="newDoc.academicYear"
-                type="text"
-                maxlength="4"
-                inputmode="numeric"
-                placeholder="e.g. 2025">
-            </label>
-
-            <label>
-              PDF file
-
-              <input
-                type="file"
-                accept="application/pdf,.pdf"
-                (change)="onFile($event)">
-            </label>
-
-            <button
-              class="primary-btn"
-              [disabled]="
-                !newDoc.subjectId ||
-                !newDoc.title ||
-                !file ||
-                (newDoc.type === 'RESOURCE' && !newDoc.moduleNumber) ||
-                (newDoc.type === 'PAPER' &&
-                  (!newDoc.examType || !newDoc.academicYear))
-              "
-              (click)="upload()">
-              Upload PDF ↑
-            </button>
-
-          </div>
 
         </div>
 
