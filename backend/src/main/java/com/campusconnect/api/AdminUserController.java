@@ -28,7 +28,7 @@ public class AdminUserController {
         this.domain = domain.trim().toLowerCase(Locale.ROOT).replaceFirst("^@", "");
     }
 
-    public record CreateStaffRequest(String name, String email, String password) {}
+    public record CreateStaffRequest(String name, String email, String password, String role) {}
     public record UserView(Long id, String name, String email, String role,
                            boolean emailVerified) {
         static UserView from(User u) {
@@ -46,7 +46,9 @@ public class AdminUserController {
     public ResponseEntity<?> createStaff(@RequestBody CreateStaffRequest request) {
         if (request == null || request.name() == null || request.name().isBlank()
                 || request.email() == null || request.password() == null
-                || request.password().length() < 12) {
+                || request.password().length() < 12 || request.password().length() > 72
+                || request.name().trim().length() > 100 || request.email().length() > 254
+                || request.role() == null || !List.of("STAFF", "TEACHER").contains(request.role())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Name, college email, and password of at least 12 characters required");
         }
@@ -60,11 +62,24 @@ public class AdminUserController {
                     .body(Map.of("error", "Email already registered"));
         }
         User staff = new User(request.name().trim(), email,
-                encoder.encode(request.password()), "STAFF");
+                encoder.encode(request.password()), request.role());
         // Provisioned accounts are created by authorized administrators.
         staff.setEmailVerified(true);
         staff.setEmailVerifiedAt(Instant.now());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(UserView.from(users.save(staff)));
+    }
+
+    @PutMapping("/{id}/terminate")
+    public ResponseEntity<UserView> terminate(@PathVariable Long id) {
+        User employee = users.findById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Employee not found"));
+        if (!List.of("STAFF", "TEACHER").contains(employee.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only employee accounts can be terminated");
+        }
+        // Preserve ownership, audit history, and uploaded records while denying future logins.
+        employee.setEmailVerified(false);
+        employee.setEmailVerifiedAt(null);
+        return ResponseEntity.ok(UserView.from(users.save(employee)));
     }
 }
