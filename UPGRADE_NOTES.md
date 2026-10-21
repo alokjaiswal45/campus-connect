@@ -26,12 +26,12 @@ GitHub Actions runs `npm ci && npm run build` in `frontend` and `mvn -B test pac
 
 Item images and private evidence are served through authenticated `GET /api/images/{imageId}`. The UI retrieves image blobs with the user's credentials; direct unauthenticated image URLs will not work.
 
-## Operational cautions
+## Dispute workflow\n\nA student can appeal a rejected or approved claim using `POST /api/claims/{claimId}/disputes`. Administrators can review open appeals at `GET /api/admin/disputes` and record independent decisions with `PUT /api/admin/disputes/{id}/resolve`. An unresolved appeal blocks physical handover. An upheld appeal records the decision but does not automatically reassign ownership or bypass in-person verification.\n\n## Operational cautions
 
-- Existing databases need a **reviewed migration plan** for `item_claims`, `item_images`, and the new custody columns in `lost_item`. No irreversible schema migration is included yet. Back up the database before running this branch.
+- Additive MySQL scripts are provided at `backend/db/migrations/001_role_portals_lost_found.sql` and `002_claim_disputes.sql`. **Back up your database and review the schema before applying them manually, in order**. They have not been validated against the live database and are not auto-applied.
 - Item photos are stored in MySQL. Configure database storage and backups for image volume.
 - Image uploads accept JPEG/PNG/WebP up to 5 MB. MIME signatures are checked, but a dedicated image decoder, antivirus scan, metadata stripping, and request-rate limiting are recommended for production.
 - Concurrency protection uses pessimistic row locking on the item row. Validate against the target MySQL configuration with parallel integration tests.
 - Staff and admin account provisioning currently uses administrator-supplied initial passwords. Add a secure password-reset/invitation flow before real deployment.
-- Some workflows (staff inventory browsing, admin disputes/analytics, production deployment) are not yet complete.
+- Staff inventory browsing, basic admin disputes and aggregate analytics are implemented. End-to-end MySQL integration tests, upload hardening, production deployment and operational review remain incomplete.
 - Never commit MySQL, SMTP, admin, or super-admin credentials to GitHub. Configure them outside tracked files.
