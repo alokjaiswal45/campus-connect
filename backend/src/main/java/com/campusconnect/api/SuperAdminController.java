@@ -44,11 +44,12 @@ public class SuperAdminController {
 
     @PostMapping("/admins")
     public ResponseEntity<Account> createAdmin(@RequestBody CreateAdmin request) {
-        if (request == null || request.name() == null || request.name().isBlank()
-                || request.email() == null || request.password() == null
-                || request.password().length() < 12) {
+        if (request == null || request.name() == null || request.name().isBlank() || request.name().trim().length() > 100
+                || request.email() == null || request.email().length() > 254
+                || request.password() == null
+                || request.password().length() < 12 || request.password().length() > 72) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Name, college email and password of at least 12 characters required");
+                    "Name (up to 100 characters), college email and password (12-72 characters) required");
         }
         String email = request.email().trim().toLowerCase(Locale.ROOT);
         if (!email.matches("^[a-z0-9._%+-]+@" + Pattern.quote(domain) + "$")) {
