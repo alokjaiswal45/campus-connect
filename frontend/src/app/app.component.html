@@ -851,6 +851,23 @@
 
         </div>
 
+        <section class="panel form-panel" *ngIf="isAdmin">
+          <h2>Staff accounts</h2>
+          <p>Create authorized staff accounts. Public staff registration is disabled.</p>
+          <label>Full name <input [(ngModel)]="newStaff.name" maxlength="255"></label>
+          <label>College email <input [(ngModel)]="newStaff.email" type="email"></label>
+          <label>Temporary password (minimum 12 characters)
+            <input [(ngModel)]="newStaff.password" type="password" autocomplete="new-password">
+          </label>
+          <button class="primary-btn" [disabled]="!newStaff.name.trim() || !newStaff.email.trim() || newStaff.password.length < 12"
+            (click)="createStaff()">Create staff account</button>
+          <button class="outline-btn" (click)="loadCampusUsers()">Refresh users</button>
+          <div class="mini-list">
+            <div *ngFor="let account of campusUsers">
+              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }}</span>
+            </div>
+          </div>
+        </section>
         <div class="admin-grid" *ngIf="isAdmin">
 
           <!-- ADD BRANCH -->
