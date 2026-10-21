@@ -127,8 +127,7 @@ public class ItemClaimController {
     @Transactional
     public ClaimView handover(@PathVariable Long id, @RequestBody HandoverRequest request,
             Authentication auth) {
-        ItemClaim claim = claims.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
+        ItemClaim claim = lockClaimItemThenRead(id);
         if (!"APPROVED".equals(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Claim not approved or already handed over");
         }
