@@ -23,6 +23,14 @@ public class User {
     @Column(nullable = false)
     private String role = "STUDENT";
 
+    // Nullable for backward compatibility with existing database rows.
+    // Explicitly false means terminated; OTP verification cannot reactivate it.
+    @Column(name = "account_active")
+    private Boolean accountActive = true;
+
+    public boolean isAccountActive() { return !Boolean.FALSE.equals(accountActive); }
+    public void setAccountActive(boolean active) { this.accountActive = active; }
+
     // True only after college email verification succeeds.
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
