@@ -5,6 +5,7 @@ import com.campusconnect.model.LostItem;
 import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.time.Instant;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -20,10 +21,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class ItemClaimController {
     private final ItemClaimRepository claims;
     private final LostItemRepository items;
+    private final EntityManager entityManager;
 
-    public ItemClaimController(ItemClaimRepository claims, LostItemRepository items) {
+    public ItemClaimController(ItemClaimRepository claims, LostItemRepository items,
+            EntityManager entityManager) {
         this.claims = claims;
         this.items = items;
+        this.entityManager = entityManager;
     }
 
     public record ClaimRequest(String ownershipAnswer) {}
@@ -45,9 +49,9 @@ public class ItemClaimController {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
         items.lockById(existing.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        // Refresh after acquiring the item lock to see the latest committed claim state.
-        return claims.findById(id).orElseThrow(() ->
-                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
+        // Refresh the already managed claim after waiting for the item lock.
+        entityManager.refresh(existing);
+        return existing;
     }
 
     @PostMapping("/items/{itemId}/claims")
