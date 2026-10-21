@@ -851,6 +851,16 @@
 
         </div>
 
+        <section class="panel" *ngIf="isAdmin">
+          <h2>Campus Lost &amp; Found overview</h2>
+          <button class="outline-btn" (click)="loadAdminStats()">Refresh analytics</button>
+          <div class="admin-stats-grid">
+            <div *ngFor="let metric of ['totalReports','lostReports','foundReports','unresolvedReports','inCustody','totalClaims','pendingClaims','completedHandovers']">
+              <strong>{{ adminStats[metric] ?? '—' }}</strong>
+              <span>{{ metric }}</span>
+            </div>
+          </div>
+        </section>
         <section class="panel form-panel" *ngIf="isAdmin">
           <h2>Staff accounts</h2>
           <p>Create authorized staff accounts. Public staff registration is disabled.</p>
