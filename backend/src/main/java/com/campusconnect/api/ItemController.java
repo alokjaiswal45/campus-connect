@@ -70,9 +70,9 @@ public class ItemController {
     public ResponseEntity<PublicItem> close(@PathVariable Long id, Authentication auth) {
         LostItem item = repo.lockById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        boolean admin = auth.getAuthorities().stream().anyMatch(a ->
-                List.of("ROLE_ADMIN", "ROLE_SUPER_ADMIN").contains(a.getAuthority()));
-        if (!auth.getName().equalsIgnoreCase(item.postedBy) && !admin) {
+        boolean staff = auth.getAuthorities().stream().anyMatch(a ->
+                "ROLE_STAFF".equals(a.getAuthority()));
+        if (!auth.getName().equalsIgnoreCase(item.postedBy) && !staff) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
         }
         if (!"OPEN".equals(item.status)) {
