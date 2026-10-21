@@ -30,10 +30,10 @@ public class AdminUserController {
 
     public record CreateStaffRequest(String name, String email, String password, String role) {}
     public record UserView(Long id, String name, String email, String role,
-                           boolean emailVerified) {
+                           boolean emailVerified, boolean accountActive) {
         static UserView from(User u) {
             return new UserView(u.getId(), u.getName(), u.getEmail(),
-                    u.getRole(), u.isEmailVerified());
+                    u.getRole(), u.isEmailVerified(), u.isAccountActive());
         }
     }
 
@@ -78,6 +78,7 @@ public class AdminUserController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only employee accounts can be terminated");
         }
         // Preserve ownership, audit history, and uploaded records while denying future logins.
+        employee.setAccountActive(false);
         employee.setEmailVerified(false);
         employee.setEmailVerifiedAt(null);
         return ResponseEntity.ok(UserView.from(users.save(employee)));
