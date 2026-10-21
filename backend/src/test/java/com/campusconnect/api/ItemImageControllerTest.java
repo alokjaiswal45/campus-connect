@@ -58,6 +58,34 @@ class ItemImageControllerTest {
     }
 
     @Test
+    void claimEvidenceIsNotListedToAnotherStudent() {
+        ItemClaim claim = new ItemClaim();
+        claim.id = 11L;
+        claim.claimantEmail = "owner@bmsce.ac.in";
+        when(claims.findById(11L)).thenReturn(Optional.of(claim));
+        assertThrows(ResponseStatusException.class, () ->
+                controller.listEvidence(11L, login("stranger@bmsce.ac.in")));
+        verify(images, never()).findByClaimIdOrderByCreatedAtAsc(anyLong());
+    }
+
+    @Test
+    void itemImageUploadRejectsFourthPhoto() {
+        LostItem item = new LostItem();
+        item.id = 2L;
+        item.postedBy = "finder@bmsce.ac.in";
+        item.status = "OPEN";
+        when(items.lockById(2L)).thenReturn(Optional.of(item));
+        when(images.findByItemIdAndClaimIsNullOrderByCreatedAtAsc(2L))
+                .thenReturn(java.util.List.of(new ItemImage(), new ItemImage(), new ItemImage()));
+        MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png",
+                new byte[] {1, 2, 3});
+        ResponseStatusException error = assertThrows(ResponseStatusException.class, () ->
+                controller.uploadItem(2L, file, login("finder@bmsce.ac.in")));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, error.getStatusCode());
+        verify(images, never()).save(any());
+    }
+
+    @Test
     void malformedImageIsRejected() throws Exception {
         LostItem item = new LostItem();
         item.postedBy = "finder@bmsce.ac.in";
