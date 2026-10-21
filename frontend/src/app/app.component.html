@@ -905,8 +905,8 @@
           <button class="outline-btn" (click)="loadCampusUsers()">Refresh users</button>
           <div class="mini-list">
             <div *ngFor="let account of campusUsers">
-              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }} · {{ account.emailVerified ? 'Active' : 'Inactive' }}</span>
-              <button class="delete-btn" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.emailVerified" (click)="terminateEmployee(account)">Terminate access</button>
+              <b>{{ account.name }}</b><span>{{ account.role }} · {{ account.email }} · {{ account.accountActive ? 'Active' : 'Terminated' }}</span>
+              <button class="delete-btn" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" (click)="terminateEmployee(account)">Terminate access</button>
             </div>
           </div>
         </section>
