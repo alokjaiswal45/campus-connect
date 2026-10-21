@@ -41,11 +41,8 @@ public class ItemImageController {
         if (bytes.length >= 8 && (bytes[0] & 255) == 137
                 && bytes[1] == 80 && bytes[2] == 78 && bytes[3] == 71
                 && bytes[4] == 13 && bytes[5] == 10 && bytes[6] == 26 && bytes[7] == 10) return "image/png";
-        if (bytes.length >= 12 && bytes[0] == 'R' && bytes[1] == 'I'
-                && bytes[2] == 'F' && bytes[3] == 'F' && bytes[8] == 'W'
-                && bytes[9] == 'E' && bytes[10] == 'B' && bytes[11] == 'P') return "image/webp";
         throw new ResponseStatusException(HttpStatus.UNSUPPORTED_MEDIA_TYPE,
-                "Only JPEG, PNG and WebP images are supported");
+                "Only JPEG and PNG images are supported");
     }
 
     private ItemImage saveImage(LostItem item, ItemClaim claim,
