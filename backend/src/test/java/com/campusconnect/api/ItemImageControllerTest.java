@@ -40,7 +40,7 @@ class ItemImageControllerTest {
         LostItem item = new LostItem();
         item.postedBy = "finder@bmsce.ac.in";
         item.status = "OPEN";
-        when(items.findById(2L)).thenReturn(Optional.of(item));
+        when(items.lockById(2L)).thenReturn(Optional.of(item));
         MockMultipartFile file = new MockMultipartFile("file", "bad.png", "image/png",
                 new byte[] { (byte)137, 80, 78, 71, 13, 10, 26, 10, 1, 2, 3 });
         assertThrows(Exception.class, () ->
@@ -53,7 +53,7 @@ class ItemImageControllerTest {
         LostItem item = new LostItem();
         item.postedBy = "finder@bmsce.ac.in";
         item.status = "OPEN";
-        when(items.findById(2L)).thenReturn(Optional.of(item));
+        when(items.lockById(2L)).thenReturn(Optional.of(item));
         MockMultipartFile file = new MockMultipartFile("file", "photo.png", "image/png",
                 new byte[] {1, 2, 3});
         assertThrows(ResponseStatusException.class, () ->
