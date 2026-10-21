@@ -39,3 +39,7 @@ Item images and private evidence are served through authenticated `GET /api/imag
 ## Ownership appeal behavior
 
 When an independent administrator upholds a rejected claim, the backend returns that claim to `PENDING` for staff review only if the item remains open and no competing claim is approved or handed over. This never automatically approves the claimant or transfers the item. If another claimant has already been approved, the admin must address the conflict separately; the appeal resolution is rejected with HTTP 409. Dismissed appeals and upheld appeals of an already approved claim do not change claim assignment.
+
+## Competing appeals and final handover
+
+Staff cannot complete handover while **any** ownership appeal for the item is OPEN, including appeals from other claimants. Claim evidence uploads refresh claim state after locking the item to avoid accepting evidence after a concurrent review. Resolve all open appeals independently before releasing physical custody.
