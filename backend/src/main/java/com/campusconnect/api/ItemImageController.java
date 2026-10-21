@@ -53,6 +53,9 @@ public class ItemImageController {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image must be 1 byte to 5 MB");
         }
         byte[] bytes = file.getBytes();
+        if (bytes.length > 5 * 1024 * 1024) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Image exceeds 5 MB");
+        }
         String detectedType = verifiedType(bytes);
         BufferedImage decoded = ImageIO.read(new ByteArrayInputStream(bytes));
         if (decoded == null || decoded.getWidth() <= 0 || decoded.getHeight() <= 0
