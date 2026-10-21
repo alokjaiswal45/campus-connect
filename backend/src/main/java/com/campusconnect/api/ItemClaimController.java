@@ -3,6 +3,7 @@ package com.campusconnect.api;
 import com.campusconnect.model.ItemClaim;
 import com.campusconnect.model.LostItem;
 import com.campusconnect.repo.ItemClaimRepository;
+import com.campusconnect.repo.ClaimDisputeRepository;
 import com.campusconnect.repo.LostItemRepository;
 import java.time.Instant;
 import jakarta.persistence.EntityManager;
@@ -22,12 +23,14 @@ public class ItemClaimController {
     private final ItemClaimRepository claims;
     private final LostItemRepository items;
     private final EntityManager entityManager;
+    private final ClaimDisputeRepository disputes;
 
     public ItemClaimController(ItemClaimRepository claims, LostItemRepository items,
-            EntityManager entityManager) {
+            EntityManager entityManager, ClaimDisputeRepository disputes) {
         this.claims = claims;
         this.items = items;
         this.entityManager = entityManager;
+        this.disputes = disputes;
     }
 
     public record ClaimRequest(String ownershipAnswer) {}
@@ -157,6 +160,9 @@ public class ItemClaimController {
         ItemClaim claim = lockClaimItemThenRead(id);
         if (claim.item.custodyAcceptedAt == null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item not in staff custody");
+        }
+        if (disputes.existsByClaimIdAndStatus(id, "OPEN")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Resolve the open dispute before handover");
         }
         if (!"APPROVED".equals(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Claim not approved or already handed over");
