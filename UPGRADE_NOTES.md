@@ -35,3 +35,7 @@ Item images and private evidence are served through authenticated `GET /api/imag
 - Staff and admin account provisioning currently uses administrator-supplied initial passwords. Add a secure password-reset/invitation flow before real deployment.
 - Staff inventory browsing, basic admin disputes and aggregate analytics are implemented. End-to-end MySQL integration tests, upload hardening, production deployment and operational review remain incomplete.
 - Never commit MySQL, SMTP, admin, or super-admin credentials to GitHub. Configure them outside tracked files.
+
+## Ownership appeal behavior
+
+When an independent administrator upholds a rejected claim, the backend returns that claim to `PENDING` for staff review only if the item remains open and no competing claim is approved or handed over. This never automatically approves the claimant or transfers the item. If another claimant has already been approved, the admin must address the conflict separately; the appeal resolution is rejected with HTTP 409. Dismissed appeals and upheld appeals of an already approved claim do not change claim assignment.
