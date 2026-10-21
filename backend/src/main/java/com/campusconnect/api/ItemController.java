@@ -2,6 +2,8 @@ package com.campusconnect.api;
 
 import com.campusconnect.model.LostItem;
 import com.campusconnect.repo.LostItemRepository;
+import com.campusconnect.repo.ItemClaimRepository;
+import com.campusconnect.repo.ClaimDisputeRepository;
 import java.time.Instant;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -15,7 +17,14 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/items")
 public class ItemController {
     private final LostItemRepository repo;
-    public ItemController(LostItemRepository repo) { this.repo = repo; }
+    private final ItemClaimRepository claims;
+    private final ClaimDisputeRepository disputes;
+    public ItemController(LostItemRepository repo, ItemClaimRepository claims,
+            ClaimDisputeRepository disputes) {
+        this.repo = repo;
+        this.claims = claims;
+        this.disputes = disputes;
+    }
 
     public record ItemRequest(String title, String description, String location,
             String category, String kind) {}
@@ -69,6 +78,11 @@ public class ItemController {
         if ("FOUND".equalsIgnoreCase(item.kind) && item.custodyAcceptedAt != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Item in staff custody must be resolved through verified handover");
+        }
+        if (claims.existsByItemIdAndStatusIn(id, List.of("PENDING", "APPROVED"))
+                || disputes.existsOpenForItem(id, "OPEN")) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Resolve active ownership claims and disputes before closing the item");
         }
         item.status = "RESOLVED";
         return ResponseEntity.ok(PublicItem.from(repo.save(item)));
