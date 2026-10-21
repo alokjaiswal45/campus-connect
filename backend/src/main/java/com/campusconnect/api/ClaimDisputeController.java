@@ -52,6 +52,9 @@ public class ClaimDisputeController {
         }
         items.lockById(claim.item.id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
+        // Refresh after obtaining the item lock to avoid stale claim status.
+        claim = claims.findById(claimId).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Claim not found"));
         if (!List.of("REJECTED", "APPROVED").contains(claim.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "This claim cannot be disputed");
         }
