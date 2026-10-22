@@ -23,7 +23,7 @@ class ItemClaimControllerTest {
             new UsernamePasswordAuthenticationToken("desk@bmsce.ac.in", "unused");
 
     @Test
-    void inventoryOnlyReturnsFoundItemsAndRetainsStaffCustodyDetails() {
+    void inventoryReturnsLostAndFoundReportsAndRetainsStaffCustodyDetails() {
         LostItem found = new LostItem();
         found.id = 1L;
         found.kind = "FOUND";
@@ -33,9 +33,11 @@ class ItemClaimControllerTest {
         lost.kind = "LOST";
         when(items.findAll()).thenReturn(java.util.List.of(found, lost));
         var inventory = controller.inventory();
-        assertEquals(1, inventory.size());
+        assertEquals(2, inventory.size());
         assertEquals(1L, inventory.get(0).id());
         assertEquals("Staff locker A", inventory.get(0).custodyLocation());
+        assertEquals(2L, inventory.get(1).id());
+        assertEquals("LOST", inventory.get(1).kind());
     }
 
     @Test
