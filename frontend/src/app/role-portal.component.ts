@@ -19,12 +19,13 @@ import { ApiService } from './api.service';
             <button type="button" [class.active]="teacherTab === 'browse' && teacherLibraryType === 'PAPER'" (click)="teacherTab = 'browse'; chooseTeacherType('PAPER')"><cc-icon name="file" />Question papers</button>
             <button type="button" [class.active]="teacherTab === 'upload'" (click)="openTeacherUpload()"><cc-icon name="upload" />Publish a resource</button>
           </ng-container>
-          <button type="button" *ngIf="section === 'staff'" class="active" (click)="loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
+          <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'operations'" [disabled]="busy" (click)="staffTab = 'operations'; loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
+          <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'storage'" [disabled]="busy" (click)="staffTab = 'storage'; loadItems()"><cc-icon name="folder" />Physical storage<span class="nav-count">{{ countInCustody() }}</span></button>
         </nav>
         <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><span class="avatar">{{ user?.name?.[0] || 'C' }}</span><div><strong>{{ user?.name || label }}</strong><small>{{ label }} account</small></div></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
       </aside>
       <main class="portal-main">
-      <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : 'Lost & Found' }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><span class="avatar">{{ user?.name?.[0] || 'C' }}</span></div></header>
+      <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : (staffTab === 'storage' ? 'Physical storage' : 'Lost & Found') }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><span class="avatar">{{ user?.name?.[0] || 'C' }}</span></div></header>
       <div class="portal-content">
       <section class="role-portal-welcome">
         <div class="welcome-copy"><p class="eyebrow">{{ section === 'teacher' ? 'THE FACULTY WORKSPACE' : 'THE CAMPUS CARE DESK' }}</p>
@@ -37,7 +38,7 @@ import { ApiService } from './api.service';
       </section>
       <section class="role-portal-grid">
         <article *ngIf="section === 'staff'" class="staff-workspace">
-          <div class="portal-section-head"><span class="portal-icon"><cc-icon name="search" /></span><div><h2>Lost &amp; Found operations</h2><p>Review every report, receive found property, verify claims, and record safe handovers.</p></div></div>
+          <div class="portal-section-head"><span class="portal-icon"><cc-icon name="search" /></span><div><h2>{{ staffTab === 'storage' ? 'Physical storage dashboard' : 'Lost & Found operations' }}</h2><p>{{ staffTab === 'storage' ? 'Track secure locations, receiving staff and storage history. Open a case to review claims or record handover.' : 'Review every report, receive found property, verify claims, and record safe handovers.' }}</p></div></div>
           <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
           <div class="staff-dashboard-kpis">
             <div><strong>{{ inventory.length }}</strong><span>All reports</span></div>
@@ -45,6 +46,7 @@ import { ApiService } from './api.service';
             <div><strong>{{ countItems('FOUND') }}</strong><span>Found reports</span></div>
             <div><strong>{{ countInCustody() }}</strong><span>In custody</span></div>
           </div>
+          <ng-container *ngIf="staffTab === 'operations'">
           <div class="staff-toolbar">
             <nav class="staff-filter-tabs" aria-label="Report filter">
               <button type="button" [class.selected]="staffFilter === 'ALL'" (click)="staffFilter = 'ALL'">All reports</button>
@@ -64,11 +66,6 @@ import { ApiService } from './api.service';
               <span class="staff-custody-tag" *ngIf="item.custodyAcceptedAt">✓ In custody: {{ item.custodyLocation }}</span>
             </button>
           </div>
-          <section class="staff-storage-register" aria-label="Physical storage register">
-            <div class="storage-register-heading"><div><h3>Physical storage register</h3><p>Confirmed receipts remain saved with each item, including after handover.</p></div><span>{{ storedItems.length }} receipt(s)</span></div>
-            <div class="admin-table-scroll" *ngIf="storedItems.length; else noStoredItems"><table class="storage-register-table"><thead><tr><th>Item</th><th>Stored at</th><th>Received by</th><th>Received on</th><th>Current status</th><th></th></tr></thead><tbody><tr *ngFor="let stored of storedItems"><td><strong>#{{ stored.id }} · {{ stored.title }}</strong><small>{{ stored.kind }} report</small></td><td>{{ stored.custodyLocation }}</td><td>{{ stored.custodyAcceptedBy }}</td><td>{{ stored.custodyAcceptedAt | date:'medium' }}</td><td>{{ stored.status === 'RESOLVED' ? 'Handed over / resolved' : 'In staff custody' }}</td><td><button type="button" [disabled]="busy" (click)="selectItem(stored)">Open case</button></td></tr></tbody></table></div>
-            <ng-template #noStoredItems><p class="staff-info-note">No physical receipts recorded yet. Select an item and confirm intake once it is present at the desk.</p></ng-template>
-          </section>
           <p *ngIf="filteredInventory.length === 0" class="teacher-library-empty">No reports match this filter.</p>
           <section *ngIf="selectedStaffItem as selected" class="staff-case-panel">
             <div class="portal-section-head"><span class="portal-icon">⌘</span><div><h2>{{ selected.title }} <small>#{{ selected.id }}</small></h2><p>{{ selected.kind }} report · {{ selected.status }} · Reported by {{ selected.postedBy }}</p></div></div>
@@ -117,6 +114,18 @@ import { ApiService } from './api.service';
               </div>
             </ng-container>
           </section>
+          </ng-container>
+          <ng-container *ngIf="staffTab === 'storage'">
+            <div class="staff-toolbar">
+              <input aria-label="Search physical storage" [(ngModel)]="storageSearch" placeholder="Search item, locker or receiving staff">
+              <button type="button" [disabled]="busy" (click)="loadItems()">↻ Refresh storage</button>
+            </div>
+          <section class="staff-storage-register" aria-label="Physical storage register">
+            <div class="storage-register-heading"><div><h3>Physical storage register</h3><p>Confirmed receipts remain saved with each item, including after handover.</p></div><span>{{ storedItems.length }} receipt(s)</span></div>
+            <div class="admin-table-scroll" *ngIf="filteredStoredItems.length; else noStoredItems"><table class="storage-register-table"><thead><tr><th>Item</th><th>Stored at</th><th>Received by</th><th>Received on</th><th>Current status</th><th></th></tr></thead><tbody><tr *ngFor="let stored of filteredStoredItems"><td><strong>#{{ stored.id }} · {{ stored.title }}</strong><small>{{ stored.kind }} report</small></td><td>{{ stored.custodyLocation }}</td><td>{{ stored.custodyAcceptedBy }}</td><td>{{ stored.custodyAcceptedAt | date:'medium' }}</td><td>{{ stored.status === 'RESOLVED' ? 'Handed over / resolved' : 'In staff custody' }}</td><td><button type="button" [disabled]="busy" (click)="selectItem(stored)">Open case</button></td></tr></tbody></table></div>
+            <ng-template #noStoredItems><p class="staff-info-note">No storage receipts match. Receive items from the Lost &amp; Found dashboard to record physical intake.</p></ng-template>
+          </section>
+          </ng-container>
         </article>
         <article *ngIf="section === 'teacher'" class="teacher-workspace">
           <div class="teacher-heading"><div><p class="eyebrow">YOUR TEACHING TOOLKIT</p><h2>{{ teacherTab === 'browse' ? 'The academic collection' : 'Make your next contribution.' }}</h2><p>{{ teacherTab === 'browse' ? 'Organized by branch. Built for discovery.' : 'Good resources make great starting points.' }}</p></div><span class="teacher-library-label"><span></span>{{ documents.length }} PDFs in the library</span></div>
@@ -249,6 +258,13 @@ export class RolePortalComponent implements OnInit {
   pdf: File | null = null;
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
+  staffTab: 'operations' | 'storage' = 'operations';
+  storageSearch = '';
+  get filteredStoredItems(): any[] {
+    const q = this.storageSearch.trim().toLowerCase();
+    return this.storedItems.filter(item => !q || [item.id, item.title, item.custodyLocation,
+      item.custodyAcceptedBy, item.status].some(value => String(value || '').toLowerCase().includes(q)));
+  }
   inventory: any[] = [];
   private inventoryGeneration = 0;
   private claimsGeneration = 0;
@@ -391,6 +407,7 @@ export class RolePortalComponent implements OnInit {
   selectItem(item: any): void {
     if (this.busy) return;
     this.recoveryConfirmed = false; this.error = ''; this.notice = '';
+    this.staffTab = 'operations';
     this.itemId = item.id;
     this.storageLocation = item.custodyLocation || '';
     this.claims = [];
