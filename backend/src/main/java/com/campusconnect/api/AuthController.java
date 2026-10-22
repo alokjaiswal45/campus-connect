@@ -83,7 +83,7 @@ private final EmailValidator emailValidator;
                 request.email().length() > 254 ||
                 request.password() == null ||
                 request.password().length() < 8 ||
-                request.password().length() > 72) {
+                request.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
 
             return ResponseEntity.badRequest().body(
                     Map.of(

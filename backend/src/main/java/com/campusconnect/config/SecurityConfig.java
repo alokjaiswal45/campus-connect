@@ -148,9 +148,14 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/send-otp",
-                                "/api/auth/verify-otp"
+                                "/api/auth/verify-otp",
+                                "/api/auth/password-reset/request",
+                                "/api/auth/password-reset/confirm"
                         )
                         .permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/auth/change-password")
+                        .hasRole("STUDENT")
 
                         // Public health endpoint.
                         .requestMatchers(

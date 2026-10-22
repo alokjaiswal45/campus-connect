@@ -34,6 +34,14 @@ class AuthControllerTest {
     }
 
     @Test
+    void registrationRejectsOversizedUtf8Password() {
+        var result = controller.register(new AuthController.Register(
+                "Student", "student@bmsce.ac.in", "界".repeat(25)));
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+        verifyNoInteractions(users, encoder);
+    }
+
+    @Test
     void registrationRejectsShortPassword() {
         var result = controller.register(new AuthController.Register(
                 "Student", "student@bmsce.ac.in", "short"));

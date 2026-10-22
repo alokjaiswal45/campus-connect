@@ -19,7 +19,7 @@ In a terminal from `backend/`:
 
 Linux/macOS:
 ```bash
-export DB_USER=root
+export DB_USER=campus_connect_app
 export DB_PASSWORD='your-mysql-password'
 export ADMIN_EMAIL='admin@campus.local'
 export ADMIN_PASSWORD='choose-a-strong-password'
@@ -27,7 +27,7 @@ mvn spring-boot:run
 ```
 Windows PowerShell:
 ```powershell
-$env:DB_USER='root'
+$env:DB_USER='campus_connect_app'
 $env:DB_PASSWORD='your-mysql-password'
 $env:ADMIN_EMAIL='admin@campus.local'
 $env:ADMIN_PASSWORD='choose-a-strong-password'
@@ -65,3 +65,13 @@ All POST/DELETE operations for academic management require ADMIN role. Lost & Fo
 - `academic_documents` stores metadata and random storage filenames; PDFs live in `backend/uploads` by default.
 - Deleting a branch/subject with dependent records may be blocked by foreign-key constraints; remove dependencies first.
 - The frontend currently expects the backend at `http://localhost:8080/api` and allows the Angular dev server at `http://localhost:4200`.
+
+## Student passwords
+
+Students use **Forgot password?** on `/student/login` to request a separate email reset code, or **Change password** in the dashboard to enter their current password. Reset codes expire after five minutes, allow five attempts, and have a 60-second resend delay and five-request hourly limit per account. Only active, verified STUDENT accounts qualify. Neither API accepts an administrator-selected student password. The admin directory exposes identity and access status only; it can activate/deactivate student access without changing credentials or email verification.
+
+Apply `backend/db/migrations/003_student_password_resets.sql` before startup when automatic schema updates are disabled. A development database with Hibernate `ddl-auto=update` can create this table automatically. No existing password data is changed by the migration. SMTP must be configured using the existing mail settings. Code request responses deliberately do not reveal account existence, eligibility, throttling, or SMTP failures; maintainers can inspect sanitized server logs. Password-change notification delivery failure does not undo a successful password change.
+
+A password change replaces the BCrypt hash and invalidates all pending reset codes. Because this application authenticates HTTP Basic credentials on every request, old logins fail on their next API request, and the client clears rejected credentials. The student must sign in again. No server-side session tokens are retained. Passwords must be at least eight characters and at most 72 UTF-8 bytes. Resetting to the current password is rejected.
+
+For production database setup and role separation, see [DATABASE_ACCESS.md](DATABASE_ACCESS.md). This patch does not change your local MySQL users or SMTP secrets.

@@ -32,3 +32,9 @@ This branch is **not deployed**. Do not merge or publish until the checks below 
 - Verify SMTP/OTP, role creation, document download, image upload, custody intake, approval, dispute resolution, and in-person handover.
 - Verify backup restoration and restart persistence.
 - Require explicit repository-owner approval before merging the draft PR into `main` or deploying publicly.
+
+## Student password update
+
+Apply `backend/db/migrations/003_student_password_resets.sql` before enabling the new password-reset endpoints when Hibernate auto-update is disabled. This migration creates only a new table and is idempotent. Follow `DATABASE_ACCESS.md` to separate the restricted runtime user from the schema-maintenance user. The `prod` profile validates an already-migrated schema and rejects the username `root`; it does not change database grants automatically.
+
+Verify `/student/forgot-password` against an actual registered college mailbox and `/student/change-password` while signed in. Confirm old credentials fail on the next API request and the admin portal cannot change student passwords. Keep the existing public-deployment authentication review above: this update retains HTTP Basic and does not replace it with cookie/token sessions.

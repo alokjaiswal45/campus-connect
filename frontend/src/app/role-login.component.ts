@@ -26,6 +26,7 @@ import { destination } from './portal-routing';
         <p class="role-login-note" *ngIf="section === 'student'">
           New student? <a routerLink="/student/onboarding">Register and verify your email</a>.
         </p>
+        <p *ngIf="section === 'student'"><a routerLink="/student/forgot-password">Forgot password?</a></p>
         <nav class="role-login-switch">
           <a routerLink="/student/login">Student</a>
           <a routerLink="/teacher/login">Teacher</a>
@@ -54,7 +55,7 @@ export class LoginPageComponent {
       return;
     }
     this.loading = true;
-    const token = btoa(this.email.trim().toLowerCase() + ':' + this.password);
+    const token = btoa(String.fromCharCode(...new TextEncoder().encode(this.email.trim().toLowerCase() + ':' + this.password)));
     sessionStorage.setItem('cc_auth', token);
     this.api.get('/auth/me').subscribe({
       next: user => {

@@ -5,6 +5,7 @@ import { catchError, map, of } from 'rxjs';
 import { AppComponent } from './app.component';
 import { LoginPageComponent } from './role-login.component';
 import { RolePortalComponent } from './role-portal.component';
+import { StudentPasswordComponent } from './student-password.component';
 import { StudentOnboardingComponent } from './student-onboarding.component';
 
 const home: Record<string, string> = {
@@ -36,6 +37,8 @@ export const roleGuard: CanActivateFn = route => {
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'student/login' },
+  { path: 'student/forgot-password', component: StudentPasswordComponent },
+  { path: 'student/change-password', component: StudentPasswordComponent, canActivate: [roleGuard], data: { role: 'STUDENT', section: 'student', change: true } },
   { path: 'student/onboarding', component: StudentOnboardingComponent },
   ...(['student', 'teacher', 'staff', 'admin'] as const).flatMap(section => {
     const role = section.replace('-', '_').toUpperCase();

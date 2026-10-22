@@ -105,6 +105,7 @@
             <small>{{ user.role }}</small>
           </div>
 
+          <a *ngIf="user.role === 'STUDENT'" class="text-button" routerLink="/student/change-password">Change password</a>
           <button
             class="text-button"
             (click)="logout()">
@@ -788,14 +789,14 @@
                   <tr *ngFor="let account of filteredCampusUsers">
                     <td><div class="admin-person"><span class="admin-person-avatar">{{ account.name?.[0] || '?' }}</span><div><strong>{{ account.name }}</strong><small>{{ account.email }}</small></div></div></td>
                     <td><span class="admin-role-tag">{{ account.role === 'STAFF' ? 'Lost &amp; Found Staff' : account.role === 'TEACHER' ? 'Teacher' : 'Student' }}</span></td>
-                    <td><span class="admin-account-status" [class.inactive]="!account.accountActive || !account.emailVerified">{{ !account.accountActive ? 'Terminated' : account.emailVerified ? 'Active' : 'Unverified' }}</span></td>
-                    <td><button type="button" class="admin-terminate" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" [disabled]="employeeTerminatingId === account.id" (click)="terminateEmployee(account)">{{ employeeTerminatingId === account.id ? 'Terminating…' : 'Terminate access' }}</button><span class="admin-no-action" *ngIf="account.role === 'STUDENT' || !account.accountActive">—</span></td>
+                    <td><span class="admin-account-status" [class.inactive]="!account.accountActive || !account.emailVerified">{{ !account.accountActive ? 'Inactive' : account.emailVerified ? 'Active' : 'Unverified' }}</span></td>
+                    <td><button type="button" class="admin-terminate" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" [disabled]="employeeTerminatingId === account.id" (click)="terminateEmployee(account)">{{ employeeTerminatingId === account.id ? 'Terminating…' : 'Terminate access' }}</button><button type="button" class="outline-btn" *ngIf="account.role === 'STUDENT'" [disabled]="employeeTerminatingId !== null" (click)="toggleStudentAccess(account)">{{ account.accountActive ? 'Deactivate access' : 'Activate access' }}</button><span class="admin-no-action" *ngIf="account.role !== 'STUDENT' && !account.accountActive">—</span></td>
                   </tr>
                   <tr *ngIf="filteredCampusUsers.length === 0"><td colspan="4" class="admin-directory-empty">No matching accounts. Try another search or choose a different role.</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="admin-directory-footnote">Termination disables sign-in but preserves documents, case history, and audit records. Students are view-only here.</p>
+            <p class="admin-directory-footnote">Termination disables sign-in but preserves documents, case history, and audit records. Student access can be enabled or disabled here. Students manage their own passwords through their registered college email.</p>
           </section>
         </section>
         <div class="admin-grid" *ngIf="isAdmin && adminSection === 'academics'">

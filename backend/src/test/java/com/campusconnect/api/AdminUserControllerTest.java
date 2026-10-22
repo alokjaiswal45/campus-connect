@@ -17,6 +17,22 @@ class AdminUserControllerTest {
             new AdminUserController(users, encoder, "bmsce.ac.in");
 
     @Test
+    void administratorCanOnlyToggleStudentAccessWithoutChangingCredentials() {
+        User student = new User("Student", "student@bmsce.ac.in", "original-hash", "STUDENT");
+        student.setEmailVerified(true);
+        when(users.lockById(1L)).thenReturn(Optional.of(student));
+        when(users.save(student)).thenReturn(student);
+        controller.studentAccess(1L, new AdminUserController.StudentAccessRequest(false));
+        assertFalse(student.isAccountActive());
+        assertEquals("original-hash", student.getPassword());
+        assertTrue(student.isEmailVerified());
+        controller.studentAccess(1L, new AdminUserController.StudentAccessRequest(true));
+        assertTrue(student.isAccountActive());
+        assertEquals("original-hash", student.getPassword());
+        verifyNoInteractions(encoder);
+    }
+
+    @Test
     void rejectsUnauthorizedEmployeeRole() {
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () ->
                 controller.createStaff(new AdminUserController.CreateStaffRequest(

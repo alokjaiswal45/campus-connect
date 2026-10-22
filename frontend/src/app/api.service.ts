@@ -51,7 +51,9 @@ export class ApiService {
     return [
       '/auth/register',
       '/auth/send-otp',
-      '/auth/verify-otp'
+      '/auth/verify-otp',
+    '/auth/password-reset/request',
+    '/auth/password-reset/confirm'
     ].includes(path.split('?')[0]);
   }
 

@@ -3,7 +3,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -17,7 +17,7 @@ type LibraryStep =
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
@@ -281,6 +281,14 @@ export class AppComponent implements OnInit {
         this.loadCampusUsers();
       },
       error: (err: any) => { this.employeeSaving = false; this.error = this.errorMessage(err, 'Unable to create employee account.'); }
+    });
+  }
+  toggleStudentAccess(account: any): void {
+    if (this.employeeTerminatingId !== null) return;
+    this.employeeTerminatingId = account.id;
+    this.api.put('/admin/users/' + account.id + '/student-access', { active: !account.accountActive }).subscribe({
+      next: () => { this.employeeTerminatingId = null; this.notice = 'Student account access updated.'; this.loadCampusUsers(); },
+      error: (err: any) => { this.employeeTerminatingId = null; this.error = this.errorMessage(err, 'Unable to update student access.'); }
     });
   }
   terminateEmployee(account: any): void {
