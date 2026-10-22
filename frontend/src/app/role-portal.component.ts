@@ -2,12 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { AccountLinkComponent } from './account-link.component';
 import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, CampusIconComponent],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent],
   templateUrl: './role-portal.component.html'
 })
 export class RolePortalComponent implements OnInit {
@@ -94,7 +95,6 @@ export class RolePortalComponent implements OnInit {
   pdf: File | null = null;
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
-  openProfile(): void { this.router.navigateByUrl('/' + this.section + '/profile'); }
   staffTab: 'operations' | 'storage' = 'operations';
   storageSearch = '';
   get filteredStoredItems(): any[] {

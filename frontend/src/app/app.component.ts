@@ -3,7 +3,8 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { AccountLinkComponent } from './account-link.component';
 import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
@@ -18,7 +19,7 @@ type LibraryStep =
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, CampusIconComponent],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {

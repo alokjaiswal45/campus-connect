@@ -10,12 +10,11 @@
           </ng-container>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'operations'" [disabled]="busy" (click)="staffTab = 'operations'; loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'storage'" [disabled]="busy" (click)="staffTab = 'storage'; loadItems()"><cc-icon name="folder" />Physical storage<span class="nav-count">{{ countInCustody() }}</span></button>
-          <button type="button" (click)="openProfile()"><cc-icon name="shield" />My profile</button>
         </nav>
-        <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><span class="avatar">{{ user?.name?.[0] || 'C' }}</span><div><strong>{{ user?.name || label }}</strong><small>{{ label }} account</small></div></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
+        <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><cc-account-link [section]="section" [user]="user" [dark]="true" /></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
       </aside>
       <main class="portal-main">
-      <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : (staffTab === 'storage' ? 'Physical storage' : 'Lost & Found') }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><span class="avatar">{{ user?.name?.[0] || 'C' }}</span></div></header>
+      <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : (staffTab === 'storage' ? 'Physical storage' : 'Lost & Found') }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><cc-account-link [section]="section" [user]="user" /></div></header>
       <div class="portal-content">
       <section class="role-portal-welcome">
         <div class="welcome-copy"><p class="eyebrow">{{ section === 'teacher' ? 'THE FACULTY WORKSPACE' : 'THE CAMPUS CARE DESK' }}</p>
