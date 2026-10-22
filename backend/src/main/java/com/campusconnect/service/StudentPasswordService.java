@@ -56,16 +56,16 @@ public class StudentPasswordService {
         return normalized.matches("^[a-z0-9._%+-]+@" + Pattern.quote(domain) + "$") ? normalized : "";
     }
 
-    private Optional<User> student(String email) {
+    private Optional<User> eligibleAccount(String email) {
         if (email.isEmpty()) return Optional.empty();
-        return users.lockByEmail(email).filter(u -> "STUDENT".equals(u.getRole())
+        return users.lockByEmail(email).filter(u -> java.util.Set.of("STUDENT", "TEACHER", "STAFF").contains(u.getRole())
                 && u.isAccountActive() && u.isEmailVerified());
     }
 
     @Transactional
     public void requestReset(String email) {
         String normalized = normalize(email);
-        Optional<User> eligible = student(normalized);
+        Optional<User> eligible = eligibleAccount(normalized);
         if (eligible.isEmpty()) return; // Same public response for every account state.
         Instant now = Instant.now();
         if (resets.countByEmailAndCreatedAtAfter(normalized, now.minus(Duration.ofHours(1))) >= 5) return;
@@ -83,13 +83,13 @@ public class StudentPasswordService {
         send(normalized, "Campus Connect - Password reset OTP",
                 "Your password reset code is: " + code + "\n\nIt expires in 5 minutes and can be used once. "
                 + "Do not share this code. If you did not request a password reset, ignore this email.");
-        log.info("Student password reset code issued for account id={}", eligible.get().getId());
+        log.info("Account password reset code issued for account id={}", eligible.get().getId());
     }
 
     @Transactional
     public boolean reset(String email, String code, String newPassword) {
         if (!validPassword(newPassword) || code == null || !code.matches("[0-9]{6}")) return false;
-        Optional<User> eligible = student(normalize(email));
+        Optional<User> eligible = eligibleAccount(normalize(email));
         if (eligible.isEmpty()) return false;
         User user = eligible.get();
         Optional<PasswordReset> latest = resets.findFirstByEmailOrderByCreatedAtDescIdDesc(user.getEmail().toLowerCase(Locale.ROOT));
@@ -107,7 +107,7 @@ public class StudentPasswordService {
     public boolean change(String email, String currentPassword, String newPassword) {
         if (!validPassword(newPassword) || currentPassword == null
                 || currentPassword.getBytes(StandardCharsets.UTF_8).length > 72) return false;
-        Optional<User> eligible = student(normalize(email));
+        Optional<User> eligible = eligibleAccount(normalize(email)).filter(u -> "STUDENT".equals(u.getRole()));
         if (eligible.isEmpty()) return false;
         User user = eligible.get();
         if (!encoder.matches(currentPassword, user.getPassword()) || encoder.matches(newPassword, user.getPassword())) return false;
@@ -121,7 +121,7 @@ public class StudentPasswordService {
         resets.invalidateAll(user.getEmail().toLowerCase(Locale.ROOT));
         // Stateless Basic authentication reloads the user's hash on each request:
         // all clients holding the old password are rejected after this transaction commits.
-        log.info("Student password updated: account id={}, method={}", user.getId(), action);
+        log.info("Account password updated: account id={}, method={}", user.getId(), action);
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override public void afterCommit() {
                 try {
@@ -129,7 +129,7 @@ public class StudentPasswordService {
                         try {
                             send(user.getEmail(), "Campus Connect - Your password changed",
                                     "Your Campus Connect password was changed. Existing logins using the old password no longer work. "
-                                    + "If this was not you, reset your password through the student portal and contact campus support.");
+                                    + "If this was not you, reset your password through your account portal and contact campus support.");
                         } catch (RuntimeException ex) {
                             log.warn("Password change notification failed for account id={}", user.getId());
                         }

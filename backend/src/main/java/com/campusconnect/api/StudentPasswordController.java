@@ -35,7 +35,7 @@ public class StudentPasswordController {
         } finally {
             log.info("Password reset code request completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
         }
-        return ResponseEntity.ok(Map.of("message", "If this is an active, verified student account, a reset code will be sent to its registered college email. Wait at least 60 seconds before requesting another code."));
+        return ResponseEntity.ok(Map.of("message", "If this is an active, verified student, teacher or staff account, a reset code will be sent to its registered college email. Wait at least 60 seconds before requesting another code."));
     }
 
     @PostMapping("/password-reset/confirm")

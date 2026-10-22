@@ -37,7 +37,9 @@ export const roleGuard: CanActivateFn = route => {
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'student/login' },
-  { path: 'student/forgot-password', component: StudentPasswordComponent },
+  ...(['student', 'teacher', 'staff'] as const).map(section => ({
+    path: section + '/forgot-password', component: StudentPasswordComponent, data: { section }
+  })),
   { path: 'student/change-password', component: StudentPasswordComponent, canActivate: [roleGuard], data: { role: 'STUDENT', section: 'student', change: true } },
   { path: 'student/onboarding', component: StudentOnboardingComponent },
   ...(['student', 'teacher', 'staff', 'admin'] as const).flatMap(section => {

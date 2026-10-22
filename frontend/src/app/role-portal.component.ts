@@ -21,6 +21,7 @@ import { ApiService } from './api.service';
           </ng-container>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'operations'" [disabled]="busy" (click)="staffTab = 'operations'; loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'storage'" [disabled]="busy" (click)="staffTab = 'storage'; loadItems()"><cc-icon name="folder" />Physical storage<span class="nav-count">{{ countInCustody() }}</span></button>
+          <button type="button" (click)="openPasswordReset()"><cc-icon name="shield" />Change password</button>
         </nav>
         <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><span class="avatar">{{ user?.name?.[0] || 'C' }}</span><div><strong>{{ user?.name || label }}</strong><small>{{ label }} account</small></div></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
       </aside>
@@ -258,6 +259,7 @@ export class RolePortalComponent implements OnInit {
   pdf: File | null = null;
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
+  openPasswordReset(): void { this.router.navigateByUrl('/' + this.section + '/forgot-password'); }
   staffTab: 'operations' | 'storage' = 'operations';
   storageSearch = '';
   get filteredStoredItems(): any[] {

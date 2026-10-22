@@ -34,6 +34,44 @@ class StudentPasswordServiceTest {
     }
     @AfterEach void cleanup() { TransactionSynchronizationManager.clearSynchronization(); }
 
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF"})
+    void employeesCanResetOnlyWithTheirSingleUseEmailCode(String role) {
+        student.setRole(role);
+        service.requestReset(student.getEmail());
+        var record = ArgumentCaptor.forClass(PasswordReset.class);
+        verify(resets).saveAndFlush(record.capture());
+        var message = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mail).send(message.capture());
+        assertEquals(student.getEmail(), message.getValue().getTo()[0]);
+        String code = java.util.regex.Pattern.compile("code is: ([0-9]{6})")
+                .matcher(message.getValue().getText()).results().findFirst().orElseThrow().group(1);
+        reset = record.getValue();
+        when(resets.findFirstByEmailOrderByCreatedAtDescIdDesc(student.getEmail())).thenReturn(Optional.of(reset));
+        assertFalse(service.reset(student.getEmail(), "invalid", "new-password"));
+        assertTrue(encoder.matches("old-password", student.getPassword()));
+        doAnswer(inv -> { reset.used = true; return null; }).when(resets).invalidateAll(student.getEmail());
+        assertTrue(service.reset(student.getEmail(), code, "new-password"));
+        assertTrue(encoder.matches("new-password", student.getPassword()));
+        assertFalse(encoder.matches("old-password", student.getPassword()));
+        assertFalse(service.reset(student.getEmail(), code, "another-password"));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF"})
+    void inactiveOrUnverifiedEmployeesCannotRequestOrUseResetCodes(String role) {
+        student.setRole(role);
+        student.setAccountActive(false);
+        service.requestReset(student.getEmail());
+        assertFalse(service.reset(student.getEmail(), "123456", "new-password"));
+        student.setAccountActive(true);
+        student.setEmailVerified(false);
+        service.requestReset(student.getEmail());
+        assertFalse(service.reset(student.getEmail(), "123456", "new-password"));
+        verifyNoInteractions(mail);
+        verify(users, never()).saveAndFlush(any());
+    }
+
     @Test void notificationIsQueuedAfterCommitWithoutBlockingTheResponse() {
         java.util.List<Runnable> queued = new java.util.ArrayList<>();
         StudentPasswordService queuedService = new StudentPasswordService(users, resets, encoder, mail,
@@ -66,7 +104,7 @@ class StudentPasswordServiceTest {
         when(resets.countByEmailAndCreatedAtAfter(eq(student.getEmail()), any())).thenReturn(5L);
         service.requestReset(student.getEmail()); verifyNoInteractions(mail);
     }
-    @Test void missingUnverifiedInactiveAndNonStudentAccountsReceiveNoCode() {
+    @Test void missingUnverifiedInactiveAndAdminAccountsReceiveNoCode() {
         service.requestReset("missing@bmsce.ac.in");
         student.setEmailVerified(false); service.requestReset(student.getEmail());
         student.setEmailVerified(true); student.setAccountActive(false); service.requestReset(student.getEmail());

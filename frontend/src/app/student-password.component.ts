@@ -10,7 +10,7 @@ import { ApiService } from './api.service';
   template: `
     <main class="role-login"><section class="role-login-card">
       <div class="role-login-brand">✦ campus<span>connect</span></div>
-      <p class="role-login-eyebrow">STUDENT ACCOUNT</p>
+      <p class="role-login-eyebrow">{{ section.toUpperCase() }} ACCOUNT</p>
       <h1>{{ changing ? 'Change password' : 'Reset password' }}</h1>
       <p>{{ changing ? 'Confirm your current password before choosing a new one.' : 'Request a code at your registered college email. Only you can reset your password.' }}</p>
       <p *ngIf="error" class="role-login-error" role="alert">{{ error }}</p>
@@ -40,11 +40,12 @@ import { ApiService } from './api.service';
           <button *ngIf="!changing" type="button" (click)="requestCode()" [disabled]="busy || resendAt > now()">Resend code</button>
         </form>
       </ng-container>
-      <p><a [routerLink]="changing && !done ? '/student/dashboard' : '/student/login'">{{ changing && !done ? 'Back to dashboard' : 'Back to sign in' }}</a></p>
+      <p><a [routerLink]="changing && !done ? '/' + section + '/dashboard' : '/' + section + '/login'">{{ changing && !done ? 'Back to dashboard' : 'Back to sign in' }}</a></p>
     </section></main>
   `
 })
 export class StudentPasswordComponent {
+  section: string = this.route.snapshot.data['section'] || 'student';
   changing = this.route.snapshot.data['change'] === true;
   email = ''; otp = ''; currentPassword = ''; newPassword = ''; confirmation = '';
   busy = false; done = false; codeRequested = false; error = ''; notice = ''; resendAt = 0;
