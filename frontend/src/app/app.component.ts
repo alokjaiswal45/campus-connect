@@ -45,6 +45,7 @@ export class AppComponent implements OnInit {
   claimLostDetails = '';
   claimProof = '';
   claimFormOpen = false;
+  claimSubmitting = false;
   reportPhoto: File | null = null;
   evidencePhoto: File | null = null;
   itemPhotoUrls: string[] = [];
@@ -142,8 +143,12 @@ export class AppComponent implements OnInit {
       .slice().reverse();
   }
 
+  claimFor(item: any): any {
+    return this.myClaims.find(claim => claim.itemId === item.id);
+  }
+
   canClaim(item: any): boolean {
-    return this.user?.role === 'STUDENT' && item.kind === 'FOUND' && item.status === 'OPEN'
+    return this.user?.role === 'STUDENT' && item.status === 'OPEN'
       && this.user.email?.toLowerCase() !== item.postedBy?.toLowerCase()
       && !this.myClaims.some(claim => claim.itemId === item.id);
   }
@@ -166,10 +171,17 @@ export class AppComponent implements OnInit {
   closeItem(): void { this.selectedItem = null; this.revokeItemPhotos(); }
 
   submitClaim(): void {
+    if (this.claimSubmitting) return;
     if (!this.selectedItem || !this.canClaim(this.selectedItem) || this.claimAnswer.trim().length < 10 || this.claimLostDetails.trim().length < 5) {
       this.error = 'Enter where and when you lost the item and at least 10 characters of identifying details.';
       return;
     }
+    const evidence = this.evidencePhoto;
+    if (evidence && (!['image/jpeg', 'image/png'].includes(evidence.type) || evidence.size > 5 * 1024 * 1024)) {
+      this.error = 'Choose a JPEG or PNG image under 5 MB.';
+      return;
+    }
+    this.claimSubmitting = true;
     this.error = '';
     this.api.post('/items/' + this.selectedItem.id + '/claims', {
       ownershipAnswer: 'Lost where/when: ' + this.claimLostDetails.trim()
@@ -177,10 +189,14 @@ export class AppComponent implements OnInit {
         + '\nAdditional proof: ' + this.claimProof.trim()
     }).subscribe({
       next: (claim: any) => {
-        this.notice = 'Claim submitted privately for staff review.';
-        if (this.evidencePhoto) {
-          this.uploadPhoto('/claims/' + claim.id + '/evidence', this.evidencePhoto,
-            'Claim and private evidence image submitted.');
+        this.claimSubmitting = false;
+        this.myClaims = [claim, ...this.myClaims];
+        this.notice = 'Ownership claim sent to Lost & Found staff for verification.';
+        if (evidence) {
+          this.api.uploadImage('/claims/' + claim.id + '/evidence', evidence).subscribe({
+            next: () => this.notice = 'Ownership claim and private proof image sent to Lost & Found staff.',
+            error: () => this.error = 'Your claim was saved, but the proof image failed to upload. Staff can still review your written details.'
+          });
         }
         this.evidencePhoto = null;
         this.closeItem();
@@ -188,7 +204,10 @@ export class AppComponent implements OnInit {
         this.loadMyClaims();
         this.loadMyDisputes();
       },
-      error: (err: any) => this.error = this.errorMessage(err, 'Unable to submit claim.')
+      error: (err: any) => {
+        this.claimSubmitting = false;
+        this.error = this.errorMessage(err, 'Unable to submit claim.');
+      }
     });
   }
 

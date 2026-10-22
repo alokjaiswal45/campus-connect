@@ -78,7 +78,7 @@ public class ItemController {
         if (!"OPEN".equals(item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already resolved");
         }
-        if ("FOUND".equalsIgnoreCase(item.kind) && item.custodyAcceptedAt != null) {
+        if (item.custodyAcceptedAt != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Item in staff custody must be resolved through verified handover");
         }

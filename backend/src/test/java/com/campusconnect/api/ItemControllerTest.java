@@ -25,6 +25,18 @@ class ItemControllerTest {
                     java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_STAFF")));
 
     @Test
+    void staffCannotBypassVerifiedHandoverForRecoveredLostItemInCustody() {
+        LostItem item = new LostItem();
+        item.kind = "LOST";
+        item.status = "OPEN";
+        item.custodyAcceptedAt = java.time.Instant.now();
+        when(repository.lockById(1L)).thenReturn(Optional.of(item));
+        var error = assertThrows(ResponseStatusException.class, () -> controller.close(1L, staff));
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(repository, never()).save(any());
+    }
+
+    @Test
     void publicListingDoesNotExposeStaffStorageLocation() {
         LostItem item = new LostItem();
         item.id = 1L;

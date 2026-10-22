@@ -51,11 +51,11 @@ import { ApiService } from './api.service';
             <div class="staff-case-overview"><div class="staff-case-photo"><img *ngIf="staffPhotos[selected.id]" [src]="staffPhotos[selected.id]" [alt]="'Uploaded photo of ' + selected.title"><span *ngIf="!staffPhotos[selected.id]">📦</span></div><div><h3>Report details</h3><p>{{ selected.description }}</p><p><strong>Category:</strong> {{ selected.category }}</p><p><strong>Reported by:</strong> {{ selected.postedBy }}</p><p><strong>Reported on:</strong> {{ selected.createdAt | date:'medium' }}</p></div></div>
             <p><strong>Reported location:</strong> {{ selected.location || 'Not specified' }}</p>
             <ng-container *ngIf="selected.kind === 'LOST'">
-              <p class="staff-info-note">Review this lost report and confirm recovery before closing it. Found property must go through intake and verified handover.</p>
-              <label *ngIf="selected.status === 'OPEN'"><input type="checkbox" [(ngModel)]="recoveryConfirmed"> I have verified that this lost item has been recovered.</label>
-              <button type="button" *ngIf="selected.status === 'OPEN'" [disabled]="busy || !recoveryConfirmed" (click)="resolveLostReport()">Mark lost report resolved</button>
+              <p class="staff-info-note">Review ownership claims below. Receive the item only when it is physically present; verify ownership before handover.</p>
+              <label *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt && claims.length === 0"><input type="checkbox" [(ngModel)]="recoveryConfirmed"> I have verified that this lost item has been recovered.</label>
+              <button type="button" *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt && claims.length === 0" [disabled]="busy || !recoveryConfirmed" (click)="resolveLostReport()">Mark lost report resolved</button>
             </ng-container>
-            <ng-container *ngIf="selected.kind === 'FOUND'">
+            <ng-container>
               <div *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt" class="staff-intake-form">
                 <h3>1. Receive item into custody</h3>
                 <p>Confirm the item is physically present and record its exact secure storage location.</p>
@@ -320,10 +320,10 @@ export class RolePortalComponent implements OnInit {
     this.itemId = item.id;
     this.storageLocation = item.custodyLocation || '';
     this.claims = [];
-    if (item.kind === 'FOUND') this.loadClaims();
+    this.loadClaims();
   }
   loadClaims(): void {
-    if (!this.itemId || this.selectedStaffItem?.kind !== 'FOUND') return;
+    if (!this.itemId) return;
     this.error = '';
     this.notice = '';
     this.api.get('/staff/items/' + this.itemId + '/claims').subscribe({

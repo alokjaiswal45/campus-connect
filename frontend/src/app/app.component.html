@@ -624,8 +624,10 @@
               <div class="lf-actions">
                 <button class="outline-btn" (click)="openItem(i)">View details</button>
                 <button class="outline-btn" *ngIf="canClaim(i)"
-                  (click)="openClaim(i)">Claim this item</button>
+                  (click)="openClaim(i)">Claim ownership</button>
+                <button class="outline-btn" *ngIf="claimFor(i)" (click)="openItem(i)">View my claim</button>
               </div>
+              <p *ngIf="claimFor(i) as claim">Your claim: {{ claim.status === 'HANDED_OVER' ? 'Collected' : claim.status }}</p>
             </div>
           </article>
         </div>
@@ -637,9 +639,22 @@
           <div class="lf-photo-gallery"><img *ngFor="let url of itemPhotoUrls" [src]="url" alt="Uploaded item photograph"></div>
           <p>{{ i.description }}</p>
           <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
-          <button class="primary-btn" *ngIf="canClaim(i) && !claimFormOpen" (click)="openClaim(i)">Claim this item</button>
+          <button class="primary-btn" *ngIf="canClaim(i) && !claimFormOpen" (click)="openClaim(i)">Claim ownership</button>
+          <section *ngIf="claimFor(i) as claim">
+            <h3>Your claim · {{ claim.status }}</h3>
+            <button class="outline-btn" (click)="loadMyClaims()">Refresh claim status</button>
+            <p *ngIf="claim.status === 'PENDING'">Your verification details have been sent to Lost &amp; Found staff for review.</p>
+            <p *ngIf="claim.pickupReference && claim.status === 'APPROVED'">Pickup reference: <strong>{{ claim.pickupReference }}</strong>. Present this reference and your college ID at the Lost &amp; Found department.</p>
+            <p *ngIf="claim.status === 'HANDED_OVER'">Staff have recorded collection of this item.</p>
+            <div *ngIf="claim.status === 'REJECTED' || claim.status === 'APPROVED'">
+              <label>Request review of the decision
+                <textarea [(ngModel)]="disputeReasons[claim.id]" maxlength="2000" placeholder="Explain why the decision needs review"></textarea>
+              </label>
+              <button class="outline-btn" (click)="openDispute(claim)">Submit dispute</button>
+            </div>
+          </section>
           <div *ngIf="claimFormOpen && canClaim(i)">
-            <h3>Claim this item</h3>
+            <h3>Claim ownership</h3>
             <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
             <label>Optional private proof photo (JPEG or PNG, max 5 MB)
               <input type="file" accept="image/jpeg,image/png" (change)="chooseEvidencePhoto($event)">
@@ -653,7 +668,7 @@
             <label>What additional proof can you provide? (optional)
               <textarea [(ngModel)]="claimProof" maxlength="300" placeholder="For example, a receipt or an older photo. Never share passwords or PINs."></textarea>
             </label>
-            <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10 || claimLostDetails.trim().length < 5">Submit private claim</button>
+            <button class="primary-btn" (click)="submitClaim()" [disabled]="claimSubmitting || claimAnswer.trim().length < 10 || claimLostDetails.trim().length < 5">{{ claimSubmitting ? 'Submitting…' : 'Submit ownership claim' }}</button>
           </div>
         </div>
 
@@ -676,28 +691,7 @@
           <ng-template #lfLogin><p>Only students can submit Lost &amp; Found reports. Administrators can review reports in the administration dashboard.</p></ng-template>
         </div>
 
-        <section class="panel lf-claims" *ngIf="user?.role === 'STUDENT'">
-          <div class="section-heading"><h2>My ownership claims</h2><button class="outline-btn" (click)="loadMyClaims()">Refresh</button></div>
-          <p *ngIf="myClaims.length === 0">No claims yet. Find your item in the Found reports and click “Claim this item” to submit verification details.</p>
-          <article *ngFor="let claim of myClaims">
-            <strong>Item #{{ claim.itemId }} · {{ claim.status }}</strong>
-            <div *ngIf="claim.status === 'REJECTED' || claim.status === 'APPROVED'">
-              <label>Dispute the decision
-                <textarea [(ngModel)]="disputeReasons[claim.id]" maxlength="2000"
-                  placeholder="Explain why you believe the claim decision needs review"></textarea>
-              </label>
-              <button class="outline-btn" (click)="openDispute(claim)">Submit dispute</button>
-            </div>
-            <p *ngIf="claim.pickupReference">Pickup reference: <strong>{{ claim.pickupReference }}</strong>. Present it with your college ID at the desk.</p>
-          </article>
-          <h3>My disputes</h3>
-          <button class="outline-btn" (click)="loadMyDisputes()">Refresh disputes</button>
-          <article *ngFor="let dispute of myDisputes">
-            <strong>Claim #{{ dispute.claimId }} · {{ dispute.status }}</strong>
-            <p>{{ dispute.reason }}</p>
-            <p *ngIf="dispute.resolution">Decision: {{ dispute.resolution }}</p>
-          </article>
-        </section>
+
       </ng-container>
 
       <!-- ADMIN PANEL -->

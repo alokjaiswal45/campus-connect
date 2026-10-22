@@ -80,7 +80,7 @@ public class ItemClaimController {
     @GetMapping("/staff/items/inventory")
     public List<StaffItemView> inventory() {
         // Desk staff need visibility into all student reports (LOST and FOUND).
-        // Physical intake and ownership claims remain restricted to FOUND items.
+        // Intake requires physical receipt, regardless of the original report type.
         return items.findAll().stream().map(StaffItemView::from).toList();
     }
 
@@ -90,8 +90,8 @@ public class ItemClaimController {
             Authentication auth) {
         LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only open found items can be received");
+        if (!"OPEN".equals(item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only open reports can be received");
         }
         if (item.custodyAcceptedAt != null) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already in custody");
@@ -118,7 +118,7 @@ public class ItemClaimController {
         }
         LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
+        if (!"OPEN".equals(item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item is not available for claims");
         }
         if (auth.getName().equalsIgnoreCase(item.postedBy)) {
