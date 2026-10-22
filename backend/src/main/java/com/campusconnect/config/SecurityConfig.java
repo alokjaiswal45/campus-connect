@@ -214,6 +214,9 @@ public class SecurityConfig {
                                 "/api/claims/*/disputes", "/api/claims/*/evidence")
                         .hasRole("STUDENT")
 
+                        .requestMatchers(HttpMethod.PUT, "/api/items/*/close")
+                        .hasRole("STAFF")
+
                         // Lost-and-found desk operations.
                         .requestMatchers("/api/staff/**")
                         .hasRole("STAFF")

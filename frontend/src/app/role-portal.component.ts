@@ -51,7 +51,9 @@ import { ApiService } from './api.service';
             <div class="staff-case-overview"><div class="staff-case-photo"><img *ngIf="staffPhotos[selected.id]" [src]="staffPhotos[selected.id]" [alt]="'Uploaded photo of ' + selected.title"><span *ngIf="!staffPhotos[selected.id]">📦</span></div><div><h3>Report details</h3><p>{{ selected.description }}</p><p><strong>Category:</strong> {{ selected.category }}</p><p><strong>Reported by:</strong> {{ selected.postedBy }}</p><p><strong>Reported on:</strong> {{ selected.createdAt | date:'medium' }}</p></div></div>
             <p><strong>Reported location:</strong> {{ selected.location || 'Not specified' }}</p>
             <ng-container *ngIf="selected.kind === 'LOST'">
-              <p class="staff-info-note">This is a LOST report. You can review it, but physical intake and claimant handover apply only to FOUND items.</p>
+              <p class="staff-info-note">Review this lost report and confirm recovery before closing it. Found property must go through intake and verified handover.</p>
+              <label *ngIf="selected.status === 'OPEN'"><input type="checkbox" [(ngModel)]="recoveryConfirmed"> I have verified that this lost item has been recovered.</label>
+              <button type="button" *ngIf="selected.status === 'OPEN'" [disabled]="busy || !recoveryConfirmed" (click)="resolveLostReport()">Mark lost report resolved</button>
             </ng-container>
             <ng-container *ngIf="selected.kind === 'FOUND'">
               <div *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt" class="staff-intake-form">
@@ -202,6 +204,7 @@ export class RolePortalComponent implements OnInit {
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
   inventory: any[] = [];
+  recoveryConfirmed = false;
   staffFilter: 'ALL' | 'LOST' | 'FOUND' = 'ALL';
   staffSearch = '';
   get filteredInventory(): any[] {
@@ -276,6 +279,21 @@ export class RolePortalComponent implements OnInit {
       error: () => { this.busy = false; this.error = 'Could not receive item. It may already be in custody.'; }
     });
   }
+  resolveLostReport(): void {
+    if (this.busy || !this.recoveryConfirmed || this.selectedStaffItem?.kind !== 'LOST'
+        || this.selectedStaffItem?.status !== 'OPEN') return;
+    this.busy = true;
+    this.error = '';
+    this.api.put('/items/' + this.itemId + '/close', {}).subscribe({
+      next: () => {
+        this.busy = false;
+        this.recoveryConfirmed = false;
+        this.notice = 'Lost report resolved after confirmed recovery.';
+        this.loadItems();
+      },
+      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Unable to resolve report.'; }
+    });
+  }
   viewEvidence(claimId: number): void {
     this.api.get('/claims/' + claimId + '/evidence').subscribe({
       next: (images: any[]) => {
@@ -298,6 +316,7 @@ export class RolePortalComponent implements OnInit {
     });
   }
   selectItem(item: any): void {
+    this.recoveryConfirmed = false;
     this.itemId = item.id;
     this.storageLocation = item.custodyLocation || '';
     this.claims = [];

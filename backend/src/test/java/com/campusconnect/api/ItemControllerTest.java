@@ -58,7 +58,7 @@ class ItemControllerTest {
     }
 
     @Test
-    void ownerCannotCloseWhileClaimIsPending() {
+    void staffCannotCloseWhileClaimIsPending() {
         LostItem item = new LostItem();
         item.postedBy = "student@bmsce.ac.in";
         item.status = "OPEN";
@@ -69,7 +69,7 @@ class ItemControllerTest {
     }
 
     @Test
-    void ownerCannotCloseWhileOwnershipAppealIsOpen() {
+    void staffCannotCloseWhileOwnershipAppealIsOpen() {
         LostItem item = new LostItem();
         item.postedBy = "student@bmsce.ac.in";
         item.status = "OPEN";
@@ -107,7 +107,9 @@ class ItemControllerTest {
         LostItem item = new LostItem();
         item.postedBy = "student@bmsce.ac.in";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
-        assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> controller.close(1L, student));
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatusCode());
         verify(repository, never()).save(any());
     }
 }
