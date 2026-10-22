@@ -42,6 +42,9 @@ export class AppComponent implements OnInit {
   lostFilter: 'ALL' | 'LOST' | 'FOUND' | 'UNRESOLVED' = 'ALL';
   selectedItem: any = null;
   claimAnswer = '';
+  claimLostDetails = '';
+  claimProof = '';
+  claimFormOpen = false;
   reportPhoto: File | null = null;
   evidencePhoto: File | null = null;
   itemPhotoUrls: string[] = [];
@@ -139,21 +142,39 @@ export class AppComponent implements OnInit {
       .slice().reverse();
   }
 
+  canClaim(item: any): boolean {
+    return this.user?.role === 'STUDENT' && item.kind === 'FOUND' && item.status === 'OPEN'
+      && this.user.email?.toLowerCase() !== item.postedBy?.toLowerCase()
+      && !this.myClaims.some(claim => claim.itemId === item.id);
+  }
+
+  openClaim(item: any): void {
+    this.openItem(item);
+    this.claimFormOpen = true;
+    setTimeout(() => document.querySelector('.lf-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
   openItem(item: any): void {
     this.selectedItem = item;
+    this.claimFormOpen = false;
+    this.claimLostDetails = '';
+    this.claimProof = '';
+    this.evidencePhoto = null;
     this.claimAnswer = '';
     this.loadItemPhotos(item.id);
   }
   closeItem(): void { this.selectedItem = null; this.revokeItemPhotos(); }
 
   submitClaim(): void {
-    if (!this.selectedItem || this.claimAnswer.trim().length < 10) {
-      this.error = 'Describe at least 10 characters of private ownership evidence.';
+    if (!this.selectedItem || !this.canClaim(this.selectedItem) || this.claimAnswer.trim().length < 10 || this.claimLostDetails.trim().length < 5) {
+      this.error = 'Enter where and when you lost the item and at least 10 characters of identifying details.';
       return;
     }
     this.error = '';
     this.api.post('/items/' + this.selectedItem.id + '/claims', {
-      ownershipAnswer: this.claimAnswer.trim()
+      ownershipAnswer: 'Lost where/when: ' + this.claimLostDetails.trim()
+        + '\nIdentifying details: ' + this.claimAnswer.trim()
+        + '\nAdditional proof: ' + this.claimProof.trim()
     }).subscribe({
       next: (claim: any) => {
         this.notice = 'Claim submitted privately for staff review.';

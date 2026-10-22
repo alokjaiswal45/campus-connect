@@ -623,8 +623,8 @@
               <small>📍 {{ i.location }} · {{ i.category }}</small>
               <div class="lf-actions">
                 <button class="outline-btn" (click)="openItem(i)">View details</button>
-                <button class="outline-btn" *ngIf="user?.role === 'STUDENT' && user.email === i.postedBy && i.status === 'OPEN'"
-                  (click)="resolve(i.id)">Mark resolved</button>
+                <button class="outline-btn" *ngIf="canClaim(i)"
+                  (click)="openClaim(i)">Claim this item</button>
               </div>
             </div>
           </article>
@@ -637,19 +637,29 @@
           <div class="lf-photo-gallery"><img *ngFor="let url of itemPhotoUrls" [src]="url" alt="Uploaded item photograph"></div>
           <p>{{ i.description }}</p>
           <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
-          <div *ngIf="user?.role === 'STUDENT' && i.kind === 'FOUND' && i.status === 'OPEN' && user.email !== i.postedBy">
+          <button class="primary-btn" *ngIf="canClaim(i) && !claimFormOpen" (click)="openClaim(i)">Claim this item</button>
+          <div *ngIf="claimFormOpen && canClaim(i)">
             <h3>Claim this item</h3>
             <p class="muted">Only authorized desk staff can read your ownership explanation. Do not include passwords or unrelated personal data.</p>
             <label>Optional private proof photo (JPEG or PNG, max 5 MB)
               <input type="file" accept="image/jpeg,image/png" (change)="chooseEvidencePhoto($event)">
             </label>
-            <textarea [(ngModel)]="claimAnswer" maxlength="2000" placeholder="Describe identifying details only the owner would know"></textarea>
-            <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10">Submit private claim</button>
+            <label>Where and when did you lose it?
+              <textarea [(ngModel)]="claimLostDetails" maxlength="500" placeholder="Approximate date, time and location"></textarea>
+            </label>
+            <label>What identifying details prove it is yours?
+              <textarea [(ngModel)]="claimAnswer" maxlength="1000" placeholder="Unique marks, contents, model or other details not visible in the report"></textarea>
+            </label>
+            <label>What additional proof can you provide? (optional)
+              <textarea [(ngModel)]="claimProof" maxlength="300" placeholder="For example, a receipt or an older photo. Never share passwords or PINs."></textarea>
+            </label>
+            <button class="primary-btn" (click)="submitClaim()" [disabled]="claimAnswer.trim().length < 10 || claimLostDetails.trim().length < 5">Submit private claim</button>
           </div>
         </div>
 
         <div class="panel form-panel lf-report">
           <h2>Report an item</h2>
+          <p *ngIf="newItem.kind === 'FOUND'">After reporting, deposit the item at the Lost &amp; Found department. Staff will confirm receipt, verify claims and hand it over to its owner.</p>
           <ng-container *ngIf="user?.role === 'STUDENT'; else lfLogin">
             <label>Report type
               <select [(ngModel)]="newItem.kind"><option value="LOST">I lost something</option><option value="FOUND">I found something</option></select>
@@ -668,7 +678,7 @@
 
         <section class="panel lf-claims" *ngIf="user?.role === 'STUDENT'">
           <div class="section-heading"><h2>My ownership claims</h2><button class="outline-btn" (click)="loadMyClaims()">Refresh</button></div>
-          <p *ngIf="myClaims.length === 0">No claims loaded.</p>
+          <p *ngIf="myClaims.length === 0">No claims yet. Find your item in the Found reports and click “Claim this item” to submit verification details.</p>
           <article *ngFor="let claim of myClaims">
             <strong>Item #{{ claim.itemId }} · {{ claim.status }}</strong>
             <div *ngIf="claim.status === 'REJECTED' || claim.status === 'APPROVED'">

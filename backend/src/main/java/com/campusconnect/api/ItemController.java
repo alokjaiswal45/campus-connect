@@ -72,7 +72,7 @@ public class ItemController {
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
         boolean staff = auth.getAuthorities().stream().anyMatch(a ->
                 "ROLE_STAFF".equals(a.getAuthority()));
-        if (!auth.getName().equalsIgnoreCase(item.postedBy) && !staff) {
+        if (!staff) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Not authorized");
         }
         if (!"OPEN".equals(item.status)) {

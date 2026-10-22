@@ -20,6 +20,10 @@ class ItemControllerTest {
     private final UsernamePasswordAuthenticationToken student =
             new UsernamePasswordAuthenticationToken("student@bmsce.ac.in", "unused");
 
+    private final UsernamePasswordAuthenticationToken staff =
+            new UsernamePasswordAuthenticationToken("staff@bmsce.ac.in", "unused",
+                    java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_STAFF")));
+
     @Test
     void publicListingDoesNotExposeStaffStorageLocation() {
         LostItem item = new LostItem();
@@ -60,7 +64,7 @@ class ItemControllerTest {
         item.status = "OPEN";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
         when(claims.existsByItemIdAndStatusIn(eq(1L), anyList())).thenReturn(true);
-        assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
+        assertThrows(ResponseStatusException.class, () -> controller.close(1L, staff));
         verify(repository, never()).save(any());
     }
 
@@ -71,7 +75,7 @@ class ItemControllerTest {
         item.status = "OPEN";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
         when(disputes.existsOpenForItem(1L, "OPEN")).thenReturn(true);
-        assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
+        assertThrows(ResponseStatusException.class, () -> controller.close(1L, staff));
         verify(repository, never()).save(any());
     }
 
@@ -82,25 +86,26 @@ class ItemControllerTest {
         item.status = "RESOLVED";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
-                () -> controller.close(1L, student));
+                () -> controller.close(1L, staff));
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
         verify(repository, never()).save(any());
     }
 
     @Test
-    void ownerCanCloseItem() {
+    void staffCanCloseItem() {
         LostItem item = new LostItem();
         item.postedBy = "student@bmsce.ac.in";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
+        item.status = "OPEN";
         when(repository.save(item)).thenReturn(item);
-        var result = controller.close(1L, student);
+        var result = controller.close(1L, staff);
         assertEquals("RESOLVED", result.getBody().status());
     }
 
     @Test
-    void unrelatedStudentCannotCloseItem() {
+    void reportOwnerCannotCloseItem() {
         LostItem item = new LostItem();
-        item.postedBy = "someone@bmsce.ac.in";
+        item.postedBy = "student@bmsce.ac.in";
         when(repository.lockById(1L)).thenReturn(Optional.of(item));
         assertThrows(ResponseStatusException.class, () -> controller.close(1L, student));
         verify(repository, never()).save(any());
