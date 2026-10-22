@@ -4,6 +4,7 @@ package com.campusconnect.api;
 import com.campusconnect.model.User;
 import com.campusconnect.repo.UserRepository;
 import com.campusconnect.service.EmailOtpService;
+import com.campusconnect.service.OtpMailAvailability;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final EmailOtpService otpService;
+    private final OtpMailAvailability mailAvailability;
     private final String allowedDomain;
 private final EmailValidator emailValidator;
 
@@ -36,6 +38,7 @@ private final EmailValidator emailValidator;
             UserRepository users,
             PasswordEncoder encoder,
             EmailOtpService otpService,
+            OtpMailAvailability mailAvailability,
             EmailValidator emailValidator,
             @Value("${app.allowed-email-domain:bmsce.ac.in}")
             String allowedDomain
@@ -43,6 +46,7 @@ private final EmailValidator emailValidator;
         this.users = users;
         this.encoder = encoder;
         this.otpService = otpService;
+        this.mailAvailability = mailAvailability;
         this.emailValidator = emailValidator;
         this.allowedDomain = allowedDomain.trim()
                 .toLowerCase(Locale.ROOT)
@@ -167,6 +171,7 @@ private final EmailValidator emailValidator;
         String email = normalizeEmail(request.email());
 
         try {
+            mailAvailability.ensureReady();
             otpService.sendOtp(email);
 
             log.info("OTP request processed");

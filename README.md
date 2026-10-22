@@ -70,8 +70,29 @@ All POST/DELETE operations for academic management require ADMIN role. Lost & Fo
 
 Students use **Forgot password?** on `/student/login` to request a separate email reset code, or **Change password** in the dashboard to enter their current password. Reset codes expire after five minutes, allow five attempts, and have a 60-second resend delay and five-request hourly limit per account. Only active, verified STUDENT accounts qualify. Neither API accepts an administrator-selected student password. The admin directory exposes identity and access status only; it can activate/deactivate student access without changing credentials or email verification.
 
-Apply `backend/db/migrations/003_student_password_resets.sql` before startup when automatic schema updates are disabled. A development database with Hibernate `ddl-auto=update` can create this table automatically. No existing password data is changed by the migration. SMTP must be configured using the existing mail settings. Code request responses deliberately do not reveal account existence, eligibility, throttling, or SMTP failures; maintainers can inspect sanitized server logs. Password-change notification delivery failure does not undo a successful password change.
+Apply `backend/db/migrations/003_student_password_resets.sql` before startup when automatic schema updates are disabled. A development database with Hibernate `ddl-auto=update` can create this table automatically. No existing password data is changed by the migration. SMTP must be configured using the existing mail settings. Code request success responses deliberately do not reveal account existence, eligibility or throttling. SMTP connectivity/authentication is checked before account lookup; an unavailable mail service returns HTTP 503 and a safe error instead of advancing the UI as though a code was sent. Maintainers can inspect sanitized server logs. Password-change notification delivery failure does not undo a successful password change.
 
 A password change replaces the BCrypt hash and invalidates all pending reset codes. Because this application authenticates HTTP Basic credentials on every request, old logins fail on their next API request, and the client clears rejected credentials. The student must sign in again. No server-side session tokens are retained. Passwords must be at least eight characters and at most 72 UTF-8 bytes. Resetting to the current password is rejected.
 
 For production database setup and role separation, see [DATABASE_ACCESS.md](DATABASE_ACCESS.md). This patch does not change your local MySQL users or SMTP secrets.
+
+## Gmail OTP sender setup
+
+Registration verification and password recovery use the same backend SMTP sender. A Gmail `535-5.7.8 Username and Password not accepted` log means Gmail rejected the configured sender credentials; it is not an incorrect student OTP. Enable 2-Step Verification for the **sender** Google account and generate a fresh App Password at https://myaccount.google.com/apppasswords. The App Password must belong to exactly the account in `spring.mail.username`. Google revokes App Passwords after the Google account password is changed. Some managed accounts do not offer App Passwords; follow that account's mail administrator policy in that case.
+
+In the existing **untracked** `backend/src/main/resources/application.properties`, set your actual sender email and a fresh App Password (without display spaces):
+
+```properties
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=YOUR_SENDER_GMAIL_ADDRESS
+spring.mail.password=YOUR_FRESH_GOOGLE_APP_PASSWORD
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+spring.mail.properties.mail.smtp.starttls.required=true
+spring.mail.properties.mail.smtp.connectiontimeout=5000
+spring.mail.properties.mail.smtp.timeout=10000
+spring.mail.properties.mail.smtp.writetimeout=10000
+```
+
+Restart the backend after changing these settings. Request a new code after startup; use the registration code only for registration and the reset code only for recovery. Never paste the App Password into chat, screenshots or committed files. If using environment overrides, update `SPRING_MAIL_USERNAME`/`SPRING_MAIL_PASSWORD` in the environment used by the running backend as well. Do not enable JavaMail protocol debug logging for OTPs.

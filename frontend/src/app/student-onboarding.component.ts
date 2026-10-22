@@ -50,7 +50,7 @@ export class StudentOnboardingComponent {
     this.busy = true;
     this.api.post('/auth/register', { name: this.name.trim(), email: this.email.trim().toLowerCase(), password: this.password }).subscribe({
       next: () => { this.busy = false; this.password = ''; this.stage = 'verify'; this.sendOtp(); },
-      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Registration failed.'; }
+      error: (err: any) => { this.busy = false; this.error = err.error?.error || err.error?.message || 'Registration failed.'; }
     });
   }
   sendOtp(): void {
@@ -59,7 +59,7 @@ export class StudentOnboardingComponent {
     this.busy = true;
     this.api.post('/auth/send-otp', { email: this.email.trim().toLowerCase() }).subscribe({
       next: () => { this.busy = false; this.notice = 'If verification is required, a code will be sent to your college email.'; },
-      error: () => { this.busy = false; this.error = 'Unable to request verification code.'; }
+      error: (err: any) => { this.busy = false; this.error = err.error?.error || err.error?.message || 'Unable to request verification code. Please try again later.'; }
     });
   }
   verify(): void {
@@ -68,7 +68,7 @@ export class StudentOnboardingComponent {
     this.busy = true;
     this.api.post('/auth/verify-otp', { email: this.email.trim().toLowerCase(), otp: this.otp.trim() }).subscribe({
       next: () => { this.busy = false; this.otp = ''; this.notice = 'Email verified. You can now sign in using the Student portal.'; },
-      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Invalid or expired OTP.'; }
+      error: (err: any) => { this.busy = false; this.error = err.error?.error || err.error?.message || 'Invalid or expired OTP.'; }
     });
   }
 }

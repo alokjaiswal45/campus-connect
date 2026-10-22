@@ -25,6 +25,7 @@ class StudentPasswordSecurityTest {
     @Autowired PasswordEncoder encoder;
     @MockitoBean UserRepository users;
     @MockitoBean StudentPasswordService passwords;
+    @MockitoBean com.campusconnect.service.OtpMailAvailability mailAvailability;
     User student;
     private String basic(String email, String password) {
         return "Basic " + Base64.getEncoder().encodeToString((email + ":" + password).getBytes(StandardCharsets.UTF_8));
@@ -37,6 +38,24 @@ class StudentPasswordSecurityTest {
         admin.setEmailVerified(true);
         when(users.findByEmailIgnoreCase(admin.getEmail())).thenReturn(Optional.of(admin));
     }
+    @Test void mailFailureReturnsUnavailableForBothKnownAndUnknownAddresses() throws Exception {
+        doThrow(new IllegalStateException("test SMTP unavailable")).when(mailAvailability).ensureReady();
+        for (String email : new String[] { "student@bmsce.ac.in", "missing@bmsce.ac.in" }) {
+            mvc.perform(post("/api/auth/password-reset/request").contentType("application/json")
+                .content("{\"email\":\"" + email + "\"}"))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.error").value("Email service is temporarily unavailable. Please try again later."));
+        }
+        verifyNoInteractions(passwords);
+    }
+    @Test void mailSubmissionFailureIsNotReportedAsSuccess() throws Exception {
+        doThrow(new org.springframework.mail.MailAuthenticationException("test rejection"))
+            .when(passwords).requestReset("student@bmsce.ac.in");
+        mvc.perform(post("/api/auth/password-reset/request").contentType("application/json")
+            .content("{\"email\":\"student@bmsce.ac.in\"}"))
+            .andExpect(status().isServiceUnavailable()).andExpect(jsonPath("$.error").exists());
+    }
+
     @Test void resetRequestIsPublicAndDoesNotRevealWhetherAccountExists() throws Exception {
         mvc.perform(post("/api/auth/password-reset/request").contentType("application/json").content("{\"email\":\"missing@bmsce.ac.in\"}"))
             .andExpect(status().isOk()).andExpect(jsonPath("$.message").exists());

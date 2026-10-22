@@ -64,12 +64,13 @@ export class StudentPasswordComponent {
         setTimeout(() => this.resendAt = 0, 60000);
         this.notice = result.message;
       },
-      error: () => { this.busy = false; this.error = 'Unable to request a code. Please try again later.'; }
+      error: (err: any) => { this.busy = false; this.error = err.error?.error || err.error?.message || 'Unable to request a code. Please try again later.'; }
     });
   }
   save(): void {
     if (this.busy) return;
     this.error = ''; this.notice = '';
+    this.otp = this.otp.trim();
     if (this.newPassword.length < 8 || new TextEncoder().encode(this.newPassword).length > 72) {
       this.error = 'Use at least 8 characters and no more than 72 UTF-8 bytes.'; return;
     }
