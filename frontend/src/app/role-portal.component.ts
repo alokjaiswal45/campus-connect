@@ -2,23 +2,42 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CampusIconComponent],
   template: `
-    <main class="role-portal">
-      <header><strong>✦ Campus Connect</strong><button (click)="logout()">Log out</button></header>
+    <div class="role-portal" [class.teacher-portal]="section === 'teacher'">
+      <aside class="portal-sidebar">
+        <div class="brand"><span class="brand-icon"><cc-icon name="spark" /></span><div>campus<span>connect</span><small>YOUR COLLEGE, CONNECTED</small></div></div>
+        <p class="nav-label">{{ label }} WORKSPACE</p>
+        <nav aria-label="Workspace navigation">
+          <ng-container *ngIf="section === 'teacher'">
+            <button type="button" [class.active]="teacherTab === 'browse' && teacherLibraryType === 'RESOURCE'" (click)="teacherTab = 'browse'; chooseTeacherType('RESOURCE')"><cc-icon name="book" />Study resources<span class="nav-count">{{ studyResourceCount }}</span></button>
+            <button type="button" [class.active]="teacherTab === 'browse' && teacherLibraryType === 'PAPER'" (click)="teacherTab = 'browse'; chooseTeacherType('PAPER')"><cc-icon name="file" />Question papers</button>
+            <button type="button" [class.active]="teacherTab === 'upload'" (click)="openTeacherUpload()"><cc-icon name="upload" />Publish a resource</button>
+          </ng-container>
+          <button type="button" *ngIf="section === 'staff'" class="active" (click)="loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
+        </nav>
+        <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><span class="avatar">{{ user?.name?.[0] || 'C' }}</span><div><strong>{{ user?.name || label }}</strong><small>{{ label }} account</small></div></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
+      </aside>
+      <main class="portal-main">
+      <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : 'Lost & Found' }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><span class="avatar">{{ user?.name?.[0] || 'C' }}</span></div></header>
+      <div class="portal-content">
       <section class="role-portal-welcome">
-        <p>{{ label }} workspace</p>
-        <h1>Welcome, {{ user?.name || 'team member' }}</h1>
-        <p *ngIf="section === 'staff'">Manage Lost &amp; Found intake, verify ownership claims and record handovers.</p>
-        <p *ngIf="section === 'teacher'">Bring learning materials together. Upload course notes, modules and exam papers.</p>
+        <div class="welcome-copy"><p class="eyebrow">{{ section === 'teacher' ? 'THE FACULTY WORKSPACE' : 'THE CAMPUS CARE DESK' }}</p>
+        <h1>{{ section === 'teacher' ? 'Good teaching starts' : 'Every belonging' }}<br><em>{{ section === 'teacher' ? 'with a little sharing.' : 'has a way home.' }}</em></h1>
+        <p>{{ section === 'teacher' ? 'A thoughtful home for your notes, question papers and everything your students need to move forward.' : 'Receive, safeguard and reunite. Manage campus reports and verified handovers in one place.' }}</p>
+        <button type="button" class="hero-publish" *ngIf="section === 'teacher'" (click)="openTeacherUpload()"><cc-icon name="upload" />Publish a resource<cc-icon name="arrow" /></button>
+        </div>
+        <div class="faculty-art" *ngIf="section === 'teacher'" aria-hidden="true"><div class="art-orbit"></div><div class="art-note art-note-back"><span>IDEAS WORTH SHARING</span><i></i><i></i><i></i></div><div class="art-note art-note-front"><cc-icon name="book" /><strong>Knowledge,<br>passed forward.</strong><span>THE CAMPUS COLLECTION</span></div><div class="art-seal"><cc-icon name="spark" /></div></div>
+        <div class="care-art" *ngIf="section === 'staff'" aria-hidden="true"><cc-icon name="shield" /></div>
       </section>
       <section class="role-portal-grid">
         <article *ngIf="section === 'staff'" class="staff-workspace">
-          <div class="portal-section-head"><span class="portal-icon">◇</span><div><h2>Lost &amp; Found operations</h2><p>Review every report, receive found property, verify claims, and record safe handovers.</p></div></div>
+          <div class="portal-section-head"><span class="portal-icon"><cc-icon name="search" /></span><div><h2>Lost &amp; Found operations</h2><p>Review every report, receive found property, verify claims, and record safe handovers.</p></div></div>
           <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
           <div class="staff-dashboard-kpis">
             <div><strong>{{ inventory.length }}</strong><span>All reports</span></div>
@@ -37,7 +56,7 @@ import { ApiService } from './api.service';
           </div>
           <div class="staff-inventory">
             <button type="button" *ngFor="let item of filteredInventory" class="inventory-entry" [class.selected]="item.id === itemId" (click)="selectItem(item)">
-              <div class="staff-report-thumb"><img *ngIf="staffPhotos[item.id]" [src]="staffPhotos[item.id]" [alt]="'Photo of ' + item.title" loading="lazy"><span *ngIf="!staffPhotos[item.id]">{{ item.kind === 'LOST' ? '🔎' : '📦' }}</span></div>
+              <div class="staff-report-thumb"><img *ngIf="staffPhotos[item.id]" [src]="staffPhotos[item.id]" [alt]="'Photo of ' + item.title" loading="lazy"><cc-icon *ngIf="!staffPhotos[item.id]" [name]="item.kind === 'LOST' ? 'search' : 'folder'" /></div>
               <span class="staff-item-kind" [class.is-lost]="item.kind === 'LOST'">{{ item.kind }}</span>
               <strong>{{ item.title }}</strong>
               <small>{{ item.description }}</small>
@@ -48,7 +67,7 @@ import { ApiService } from './api.service';
           <p *ngIf="filteredInventory.length === 0" class="teacher-library-empty">No reports match this filter.</p>
           <section *ngIf="selectedStaffItem as selected" class="staff-case-panel">
             <div class="portal-section-head"><span class="portal-icon">⌘</span><div><h2>{{ selected.title }} <small>#{{ selected.id }}</small></h2><p>{{ selected.kind }} report · {{ selected.status }} · Reported by {{ selected.postedBy }}</p></div></div>
-            <div class="staff-case-overview"><div class="staff-case-photo"><img *ngIf="staffPhotos[selected.id]" [src]="staffPhotos[selected.id]" [alt]="'Uploaded photo of ' + selected.title"><span *ngIf="!staffPhotos[selected.id]">📦</span></div><div><h3>Report details</h3><p>{{ selected.description }}</p><p><strong>Category:</strong> {{ selected.category }}</p><p><strong>Reported by:</strong> {{ selected.postedBy }}</p><p><strong>Reported on:</strong> {{ selected.createdAt | date:'medium' }}</p></div></div>
+            <div class="staff-case-overview"><div class="staff-case-photo"><img *ngIf="staffPhotos[selected.id]" [src]="staffPhotos[selected.id]" [alt]="'Uploaded photo of ' + selected.title"><cc-icon *ngIf="!staffPhotos[selected.id]" name="folder" /></div><div><h3>Report details</h3><p>{{ selected.description }}</p><p><strong>Category:</strong> {{ selected.category }}</p><p><strong>Reported by:</strong> {{ selected.postedBy }}</p><p><strong>Reported on:</strong> {{ selected.createdAt | date:'medium' }}</p></div></div>
             <p><strong>Reported location:</strong> {{ selected.location || 'Not specified' }}</p>
             <ng-container *ngIf="selected.kind === 'LOST'">
               <p class="staff-info-note">Review ownership claims below. Receive the item only when it is physically present; verify ownership before handover.</p>
@@ -92,39 +111,50 @@ import { ApiService } from './api.service';
           </section>
         </article>
         <article *ngIf="section === 'teacher'" class="teacher-workspace">
+          <div class="teacher-heading"><div><p class="eyebrow">YOUR TEACHING TOOLKIT</p><h2>{{ teacherTab === 'browse' ? 'The academic collection' : 'Make your next contribution.' }}</h2><p>{{ teacherTab === 'browse' ? 'Organized by branch. Built for discovery.' : 'Good resources make great starting points.' }}</p></div><span class="teacher-library-label"><span></span>{{ documents.length }} PDFs in the library</span></div>
           <nav class="teacher-tabs" aria-label="Teacher academic workspace">
-            <button type="button" [class.selected]="teacherTab === 'browse'" (click)="teacherTab = 'browse'">▤ Browse resources</button>
-            <button type="button" [class.selected]="teacherTab === 'upload'" (click)="teacherTab = 'upload'">＋ Upload resource</button>
+            <button type="button" [class.selected]="teacherTab === 'browse'" (click)="teacherTab = 'browse'"><cc-icon name="book" />Browse resources</button>
+            <button type="button" [class.selected]="teacherTab === 'upload'" (click)="openTeacherUpload()"><cc-icon name="upload" />Upload resource</button>
           </nav>
           <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
+          <div class="teacher-workbench">
           <section *ngIf="teacherTab === 'browse'" class="teacher-hierarchy">
-            <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>{{ teacherLibraryType === 'RESOURCE' ? 'Study Resources' : 'Question Papers' }}</h2><p>Browse the same academic folders as students: branch, semester, subject and PDF.</p></div></div>
-            <nav class="teacher-type-switch"><button type="button" [class.selected]="teacherLibraryType === 'RESOURCE'" (click)="chooseTeacherType('RESOURCE')">▤ Study resources</button><button type="button" [class.selected]="teacherLibraryType === 'PAPER'" (click)="chooseTeacherType('PAPER')">▧ Question papers</button></nav>
+            <div class="portal-section-head"><span class="portal-icon"><cc-icon name="book" /></span><div><h2>{{ teacherLibraryType === 'RESOURCE' ? 'Study Resources' : 'Question Papers' }}</h2><p>Your course materials, one well-organized shelf at a time.</p></div></div>
+            <nav class="teacher-type-switch"><button type="button" [class.selected]="teacherLibraryType === 'RESOURCE'" (click)="chooseTeacherType('RESOURCE')"><cc-icon name="book" />Study resources</button><button type="button" [class.selected]="teacherLibraryType === 'PAPER'" (click)="chooseTeacherType('PAPER')"><cc-icon name="file" />Question papers</button></nav>
             <div class="teacher-breadcrumbs"><button type="button" (click)="teacherStep = 'branch'">Branches</button><ng-container *ngIf="teacherBranch"> / <button type="button" (click)="teacherStep = 'semester'">{{ teacherBranch.name }}</button></ng-container><ng-container *ngIf="teacherSemester"> / <button type="button" (click)="teacherStep = 'subject'">Semester {{ teacherSemester }}</button></ng-container><ng-container *ngIf="teacherSubject"> / <button type="button" (click)="teacherStep = 'folder'">{{ teacherSubject.name }}</button></ng-container><ng-container *ngIf="teacherStep === 'documents'"> / PDFs</ng-container></div>
             <div *ngIf="teacherStep !== 'branch'" class="teacher-back-row"><button type="button" (click)="teacherBack()">← Back</button></div>
-            <ng-container *ngIf="teacherStep === 'branch'"><h3>Select your branch</h3><p>Choose your academic department.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let b of branches" class="teacher-folder" (click)="teacherBranch = b; teacherStep = 'semester'"><span class="teacher-folder-icon">🏫</span><small>{{ b.code }}</small><strong>{{ b.name }}</strong><em>Open branch →</em></button></div><p *ngIf="!branches.length" class="teacher-library-empty">No branches available.</p></ng-container>
-            <ng-container *ngIf="teacherStep === 'semester'"><h3>{{ teacherBranch?.name }}</h3><p>Select your semester.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let sem of [1,2,3,4,5,6,7,8]" class="teacher-folder" (click)="teacherSemester = sem; teacherStep = 'subject'"><span class="teacher-folder-icon">📚</span><strong>Semester {{ sem }}</strong><em>View subjects →</em></button></div></ng-container>
-            <ng-container *ngIf="teacherStep === 'subject'"><h3>Semester {{ teacherSemester }}</h3><p>Select a subject.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let s of teacherFolderSubjects" class="teacher-folder" (click)="teacherSubject = s; teacherStep = 'folder'"><span class="teacher-folder-icon">📘</span><small>{{ s.code }}</small><strong>{{ s.name }}</strong><em>Open subject →</em></button></div><p *ngIf="!teacherFolderSubjects.length" class="teacher-library-empty">No subjects have been added for this semester.</p></ng-container>
-            <ng-container *ngIf="teacherStep === 'folder'"><h3>{{ teacherSubject?.name }}</h3><p>{{ teacherLibraryType === 'RESOURCE' ? 'Select a module to view study PDFs.' : 'Select an examination.' }}</p><div class="teacher-folder-grid"><button type="button" *ngFor="let n of (teacherLibraryType === 'RESOURCE' ? [1,2,3,4,5] : [])" class="teacher-folder" (click)="teacherModule = n; teacherStep = 'documents'"><span class="teacher-folder-icon">📁</span><strong>Module {{ n }}</strong><em>View PDFs →</em></button><button type="button" *ngFor="let exam of (teacherLibraryType === 'PAPER' ? ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY'] : [])" class="teacher-folder" (click)="teacherExam = exam; teacherStep = 'year'"><span class="teacher-folder-icon">📁</span><strong>{{ exam }}</strong><em>View years →</em></button></div></ng-container>
-            <ng-container *ngIf="teacherStep === 'year'"><h3>{{ teacherExam }}</h3><p>Select the academic year.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let year of teacherYears" class="teacher-folder" (click)="teacherYear = year; teacherStep = 'documents'"><span class="teacher-folder-icon">📅</span><strong>{{ year }}</strong><em>View PDFs →</em></button></div><p *ngIf="!teacherYears.length" class="teacher-library-empty">No papers uploaded for this exam yet.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'branch'"><h3>Select your branch</h3><p>Choose your academic department.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let b of branches" class="teacher-folder" (click)="teacherBranch = b; teacherStep = 'semester'"><span class="teacher-folder-icon"><cc-icon name="campus" /></span><small>{{ b.code }}</small><strong>{{ b.name }}</strong><em>Open branch →</em></button></div><p *ngIf="!branches.length" class="teacher-library-empty">No branches available.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'semester'"><h3>{{ teacherBranch?.name }}</h3><p>Select your semester.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let sem of [1,2,3,4,5,6,7,8]" class="teacher-folder" (click)="teacherSemester = sem; teacherStep = 'subject'"><span class="teacher-folder-icon"><cc-icon name="book" /></span><strong>Semester {{ sem }}</strong><em>View subjects →</em></button></div></ng-container>
+            <ng-container *ngIf="teacherStep === 'subject'"><h3>Semester {{ teacherSemester }}</h3><p>Select a subject.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let s of teacherFolderSubjects" class="teacher-folder" (click)="teacherSubject = s; teacherStep = 'folder'"><span class="teacher-folder-icon"><cc-icon name="book" /></span><small>{{ s.code }}</small><strong>{{ s.name }}</strong><em>Open subject →</em></button></div><p *ngIf="!teacherFolderSubjects.length" class="teacher-library-empty">No subjects have been added for this semester.</p></ng-container>
+            <ng-container *ngIf="teacherStep === 'folder'"><h3>{{ teacherSubject?.name }}</h3><p>{{ teacherLibraryType === 'RESOURCE' ? 'Select a module to view study PDFs.' : 'Select an examination.' }}</p><div class="teacher-folder-grid"><button type="button" *ngFor="let n of (teacherLibraryType === 'RESOURCE' ? [1,2,3,4,5] : [])" class="teacher-folder" (click)="teacherModule = n; teacherStep = 'documents'"><span class="teacher-folder-icon"><cc-icon name="folder" /></span><strong>Module {{ n }}</strong><em>View PDFs →</em></button><button type="button" *ngFor="let exam of (teacherLibraryType === 'PAPER' ? ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY'] : [])" class="teacher-folder" (click)="teacherExam = exam; teacherStep = 'year'"><span class="teacher-folder-icon"><cc-icon name="folder" /></span><strong>{{ exam }}</strong><em>View years →</em></button></div></ng-container>
+            <ng-container *ngIf="teacherStep === 'year'"><h3>{{ teacherExam }}</h3><p>Select the academic year.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let year of teacherYears" class="teacher-folder" (click)="teacherYear = year; teacherStep = 'documents'"><span class="teacher-folder-icon"><cc-icon name="calendar" /></span><strong>{{ year }}</strong><em>View PDFs →</em></button></div><p *ngIf="!teacherYears.length" class="teacher-library-empty">No papers uploaded for this exam yet.</p></ng-container>
             <ng-container *ngIf="teacherStep === 'documents'"><h3>{{ teacherLibraryType === 'RESOURCE' ? 'Module ' + teacherModule : teacherExam + ' · ' + teacherYear }}</h3><p>{{ teacherFolderDocuments.length }} PDFs available</p><div class="teacher-resource-list"><article *ngFor="let doc of teacherFolderDocuments" class="teacher-resource-card"><div class="teacher-resource-symbol">PDF</div><div class="teacher-resource-details"><strong>{{ doc.title }}</strong><small>{{ doc.subject?.branch?.code }} · Semester {{ doc.subject?.semester }} · {{ doc.subject?.name }}</small></div><button type="button" (click)="openDocument(doc)">View PDF ↗</button></article></div><div *ngIf="!teacherFolderDocuments.length" class="teacher-library-empty">No PDFs uploaded yet. Use Upload Resource to add one.</div></ng-container>
           </section>
-          <section *ngIf="teacherTab === 'upload'">
-          <div class="portal-section-head"><span class="portal-icon">▤</span><div><h2>Academic resource studio</h2><p>Publish course notes and exam papers for students.</p></div></div>
-          <div class="portal-kpis"><div><strong>{{ subjects.length }}</strong><span>Subjects available</span></div><div><strong>{{ documents.length }}</strong><span>Documents in library</span></div></div>
+          <section *ngIf="teacherTab === 'upload'" class="teacher-upload-studio">
+          <div class="portal-section-head"><span class="portal-icon"><cc-icon name="book" /></span><div><h2>Academic resource studio</h2><p>Publish course notes and exam papers for students.</p></div></div>
+
           <form (ngSubmit)="uploadDocument()" class="portal-form">
             <label>Course subject <select name="subject" [(ngModel)]="newDoc.subjectId" required><option value="">Choose a subject</option><option *ngFor="let s of subjects" [value]="s.id">{{ s.branch?.code }} · Semester {{ s.semester }} · {{ s.name }}</option></select></label>
             <label>Document title <input name="title" [(ngModel)]="newDoc.title" maxlength="255" placeholder="e.g. Module 2 · Data Structures" required></label>
             <label>Material type <select name="type" [(ngModel)]="newDoc.type"><option value="RESOURCE">Lecture notes / study resource</option><option value="PAPER">Question paper</option></select></label>
             <label *ngIf="newDoc.type === 'RESOURCE'">Module <select name="module" [(ngModel)]="newDoc.moduleNumber"><option value="">Choose module</option><option *ngFor="let m of [1,2,3,4,5]" [value]="m">Module {{ m }}</option></select></label>
             <ng-container *ngIf="newDoc.type === 'PAPER'"><label>Exam <select name="exam" [(ngModel)]="newDoc.examType"><option value="">Choose exam</option><option *ngFor="let e of ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY']" [value]="e">{{ e }}</option></select></label><label>Exam year <input name="year" [(ngModel)]="newDoc.academicYear" maxlength="4" placeholder="2026"></label></ng-container>
-            <label>PDF (maximum 20 MB) <input type="file" accept=".pdf,application/pdf" (change)="choosePdf($event)"></label>
+            <label class="pdf-upload-zone"><cc-icon name="upload" /><strong>{{ pdf?.name || 'Give your ideas a place to land.' }}</strong><span>Choose a PDF · up to 20 MB</span><input type="file" accept=".pdf,application/pdf" (change)="choosePdf($event)"></label>
             <button type="submit" [disabled]="busy || !pdf || !newDoc.subjectId || !newDoc.title.trim() || (newDoc.type === 'RESOURCE' ? !newDoc.moduleNumber : !newDoc.examType || !newDoc.academicYear)">{{ busy ? 'Publishing…' : 'Publish resource ↗' }}</button>
           </form>
           </section>
+          <aside class="teacher-context-rail">
+            <section class="collection-summary" *ngIf="teacherTab === 'browse'"><div class="rail-title"><cc-icon name="grid" /><h3>At a glance</h3></div><div class="collection-total"><strong>{{ documents.length }}</strong><span>resources, ready to discover</span></div><dl><div><dt>Academic branches</dt><dd>{{ branches.length }}</dd></div><div><dt>Course subjects</dt><dd>{{ subjects.length }}</dd></div><div><dt>Study resources</dt><dd>{{ studyResourceCount }}</dd></div><div><dt>Question papers</dt><dd>{{ documents.length - studyResourceCount }}</dd></div></dl></section>
+            <section class="resource-preview" *ngIf="teacherTab === 'upload'"><p class="eyebrow">YOUR NEXT RESOURCE</p><div class="preview-cover"><cc-icon [name]="newDoc.type === 'PAPER' ? 'file' : 'book'" /><span>{{ newDoc.type === 'PAPER' ? 'QUESTION PAPER' : 'STUDY RESOURCE' }}</span></div><h3>{{ newDoc.title || 'A fresh perspective starts here.' }}</h3><p>{{ pdf?.name || 'Add your PDF to complete this resource.' }}</p></section>
+            <section class="teacher-rail-note"><span class="note-spark"><cc-icon name="spark" /></span><h3>A little sharing.<br>A lasting impact.</h3><p>One useful note can make a difficult concept click. Add something your students will thank you for.</p><button type="button" *ngIf="teacherTab === 'browse'" (click)="openTeacherUpload()">Share your knowledge<cc-icon name="arrow" /></button><p *ngIf="teacherTab === 'upload'" class="upload-checklist">01 · Choose the right subject<br>02 · Give it a clear title<br>03 · Add your PDF and publish</p></section>
+          </aside>
+          </div>
         </article>
       </section>
-    </main>
+      <footer class="workspace-footer"><span>CAMPUS CONNECT</span><span>A little closer. A lot more connected.</span></footer>
+      </div>
+      </main>
+    </div>
   `
 })
 export class RolePortalComponent implements OnInit {
@@ -132,6 +162,7 @@ export class RolePortalComponent implements OnInit {
   label = this.section === 'staff' ? 'Staff' : 'Teacher';
   user: any;
   subjects: any[] = [];
+  get studyResourceCount(): number { return this.documents.filter(d => d.type === 'RESOURCE').length; }
   teacherLibraryType: 'RESOURCE' | 'PAPER' = 'RESOURCE';
   teacherStep: 'branch' | 'semester' | 'subject' | 'folder' | 'year' | 'documents' = 'branch';
   teacherBranch: any = null;
@@ -173,6 +204,13 @@ export class RolePortalComponent implements OnInit {
       (this.resourceSemester === 'ALL' || String(s.semester) === this.resourceSemester));
   }
   teacherTab: 'browse' | 'upload' = 'browse';
+  openTeacherUpload(): void {
+    this.teacherTab = 'upload';
+    setTimeout(() => document.querySelector('.teacher-heading')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'start'
+    }));
+  }
   resourceSearch = '';
   resourceType: 'ALL' | 'RESOURCE' | 'PAPER' = 'ALL';
   resourceSubject = 'ALL';

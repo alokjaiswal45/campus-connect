@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router, RouterLink } from '@angular/router';
+import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -17,7 +18,7 @@ type LibraryStep =
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CampusIconComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
@@ -260,7 +261,12 @@ export class AppComponent implements OnInit {
     if (section === 'lostfound') { this.loadAdminStats(); this.loadAdminDisputes(); }
   }
 
-  adminStats: Record<string, number> = {};
+  adminStats: Record<string, number | undefined> = {};
+  readonly metricLabels: Record<string, string> = {
+    totalReports: 'Total reports', lostReports: 'Lost reports', foundReports: 'Found reports',
+    unresolvedReports: 'Unresolved reports', inCustody: 'In staff custody', totalClaims: 'Ownership claims',
+    pendingClaims: 'Pending review', completedHandovers: 'Completed handovers'
+  };
   loadAdminStats(): void {
     this.api.get('/admin/analytics').subscribe({
       next: stats => this.adminStats = stats,

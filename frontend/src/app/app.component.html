@@ -5,7 +5,7 @@
   <aside class="sidebar">
 
     <div class="brand">
-      <span class="brand-icon">✦</span>
+      <span class="brand-icon"><cc-icon name="spark" /></span>
       <div>
         campus<span>connect</span>
         <small>YOUR COLLEGE, CONNECTED</small>
@@ -17,25 +17,25 @@
     <button
       [class.active]="page === 'dashboard'"
       (click)="nav('dashboard')">
-      ▦ <span>Overview</span>
+      <cc-icon name="grid" /> <span>Overview</span>
     </button>
 
     <button
       [class.active]="page === 'resources'"
       (click)="nav('resources')">
-      ▤ <span>Study Resources</span>
+      <cc-icon name="book" /> <span>Study Resources</span>
     </button>
 
     <button
       [class.active]="page === 'papers'"
       (click)="nav('papers')">
-      ▧ <span>Question Papers</span>
+      <cc-icon name="file" /> <span>Question Papers</span>
     </button>
 
     <button
       [class.active]="page === 'lost'"
       (click)="nav('lost')">
-      ◇ <span>Lost &amp; Found</span>
+      <cc-icon name="search" /> <span>Lost &amp; Found</span>
     </button>
 
     <ng-container *ngIf="isAdmin">
@@ -44,13 +44,13 @@
       <button
         [class.active]="page === 'admin'"
         (click)="nav('admin')">
-        ⚙ <span>Manage Campus</span>
+        <cc-icon name="shield" /> <span>Manage Campus</span>
       </button>
     </ng-container>
 
     <div class="sidebar-bottom">
       <div class="help">
-        🎓 <strong>Made for students</strong>
+        <cc-icon name="campus" /> <strong>Made for students</strong>
         <p>Everything you need for a better campus experience.</p>
       </div>
 
@@ -162,10 +162,10 @@
 
           <div class="hero-art">
             <div class="floating f1">
-              📚 <span>Study smarter</span>
+              <cc-icon name="book" /> <span>Study smarter</span>
             </div>
 
-            <div class="hero-circle">✦</div>
+            <div class="hero-circle"><cc-icon name="spark" /></div>
 
             <div class="floating f2">
               ✓ <span>Stay connected</span>
@@ -184,7 +184,7 @@
         <div class="stats">
 
           <div class="stat">
-            <div class="stat-icon purple">▤</div>
+            <div class="stat-icon purple"><cc-icon name="book" /></div>
             <div>
               <strong>{{ docs.length }}</strong>
               <span>Study documents</span>
@@ -192,7 +192,7 @@
           </div>
 
           <div class="stat">
-            <div class="stat-icon blue">⌘</div>
+            <div class="stat-icon blue"><cc-icon name="grid" /></div>
             <div>
               <strong>{{ branches.length }}</strong>
               <span>Branches</span>
@@ -200,7 +200,7 @@
           </div>
 
           <div class="stat">
-            <div class="stat-icon orange">▧</div>
+            <div class="stat-icon orange"><cc-icon name="file" /></div>
             <div>
               <strong>{{ subjects.length }}</strong>
               <span>Subjects</span>
@@ -208,7 +208,7 @@
           </div>
 
           <div class="stat">
-            <div class="stat-icon green">◇</div>
+            <div class="stat-icon green"><cc-icon name="search" /></div>
             <div>
               <strong>{{ items.length }}</strong>
               <span>Community posts</span>
@@ -226,8 +226,8 @@
 
         <div class="feature-grid">
 
-          <div class="feature" (click)="nav('resources')">
-            <div class="feature-visual violet">📖</div>
+          <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('resources')" (keydown.space)="$event.preventDefault(); nav('resources')" (click)="nav('resources')">
+            <div class="feature-visual violet"><cc-icon name="book" /></div>
 
             <div class="feature-body">
               <span class="feature-tag">ACADEMICS</span>
@@ -240,8 +240,8 @@
             </div>
           </div>
 
-          <div class="feature" (click)="nav('papers')">
-            <div class="feature-visual peach">📝</div>
+          <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('papers')" (keydown.space)="$event.preventDefault(); nav('papers')" (click)="nav('papers')">
+            <div class="feature-visual peach"><cc-icon name="file" /></div>
 
             <div class="feature-body">
               <span class="feature-tag">EXAM PREP</span>
@@ -254,8 +254,8 @@
             </div>
           </div>
 
-          <div class="feature" (click)="nav('lost')">
-            <div class="feature-visual mint">🎒</div>
+          <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('lost')" (keydown.space)="$event.preventDefault(); nav('lost')" (click)="nav('lost')">
+            <div class="feature-visual mint"><cc-icon name="search" /></div>
 
             <div class="feature-body">
               <span class="feature-tag">COMMUNITY</span>
@@ -318,12 +318,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let b of branches"
-              (click)="selectLibraryBranch(b)">
+              role="button" tabindex="0" (keydown.enter)="selectLibraryBranch(b)" (keydown.space)="$event.preventDefault(); selectLibraryBranch(b)" (click)="selectLibraryBranch(b)">
 
-              <div class="feature-visual violet">🏫</div>
+              <div class="feature-visual violet"><cc-icon name="campus" /></div>
 
               <div class="feature-body">
                 <span class="feature-tag">{{ b.code }}</span>
@@ -354,12 +353,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let n of [1,2,3,4,5,6,7,8]"
-              (click)="selectLibrarySemester(n)">
+              role="button" tabindex="0" (keydown.enter)="selectLibrarySemester(n)" (keydown.space)="$event.preventDefault(); selectLibrarySemester(n)" (click)="selectLibrarySemester(n)">
 
-              <div class="feature-visual peach">📚</div>
+              <div class="feature-visual peach"><cc-icon name="book" /></div>
 
               <div class="feature-body">
                 <h3>Semester {{ n }}</h3>
@@ -384,12 +382,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let s of librarySubjects"
-              (click)="selectLibrarySubject(s)">
+              role="button" tabindex="0" (keydown.enter)="selectLibrarySubject(s)" (keydown.space)="$event.preventDefault(); selectLibrarySubject(s)" (click)="selectLibrarySubject(s)">
 
-              <div class="feature-visual mint">📘</div>
+              <div class="feature-visual mint"><cc-icon name="book" /></div>
 
               <div class="feature-body">
                 <span class="feature-tag">{{ s.code }}</span>
@@ -421,12 +418,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let n of [1,2,3,4,5]"
-              (click)="selectLibraryModule(n)">
+              role="button" tabindex="0" (keydown.enter)="selectLibraryModule(n)" (keydown.space)="$event.preventDefault(); selectLibraryModule(n)" (click)="selectLibraryModule(n)">
 
-              <div class="feature-visual violet">📁</div>
+              <div class="feature-visual violet"><cc-icon name="folder" /></div>
 
               <div class="feature-body">
                 <h3>Module {{ n }}</h3>
@@ -452,12 +448,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let exam of ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY']"
-              (click)="selectLibraryExam(exam)">
+              role="button" tabindex="0" (keydown.enter)="selectLibraryExam(exam)" (keydown.space)="$event.preventDefault(); selectLibraryExam(exam)" (click)="selectLibraryExam(exam)">
 
-              <div class="feature-visual peach">📁</div>
+              <div class="feature-visual peach"><cc-icon name="folder" /></div>
 
               <div class="feature-body">
                 <h3>
@@ -495,12 +490,11 @@
 
           <div class="feature-grid">
 
-            <div
-              class="feature"
+            <div class="feature"
               *ngFor="let year of libraryYears"
-              (click)="selectLibraryYear(year)">
+              role="button" tabindex="0" (keydown.enter)="selectLibraryYear(year)" (keydown.space)="$event.preventDefault(); selectLibraryYear(year)" (click)="selectLibraryYear(year)">
 
-              <div class="feature-visual mint">📅</div>
+              <div class="feature-visual mint"><cc-icon name="calendar" /></div>
 
               <div class="feature-body">
                 <h3>{{ year }}</h3>
@@ -583,7 +577,7 @@
               class="empty"
               *ngIf="libraryDocuments.length === 0">
 
-              <div>📂</div>
+              <div><cc-icon name="folder" /></div>
               <h3>No PDFs uploaded yet</h3>
               <p>Ask a teacher to upload materials to this folder.</p>
 
@@ -614,14 +608,14 @@
           <article class="lf-card" *ngFor="let i of visibleItems">
             <div class="lf-card-art" [class.has-photo]="!!cardPhotoUrls[i.id]">
               <img *ngIf="cardPhotoUrls[i.id]" [src]="cardPhotoUrls[i.id]" [alt]="'Photo of ' + i.title" class="lf-card-photo" loading="lazy">
-              <span *ngIf="!cardPhotoUrls[i.id]" aria-hidden="true">{{ i.category === 'Electronics' ? '📱' : i.category === 'Books' ? '📚' : i.category === 'Keys' ? '🔑' : '🎒' }}</span>
+              <cc-icon *ngIf="!cardPhotoUrls[i.id]" [name]="i.category === 'Books' ? 'book' : 'search'" />
             </div>
             <div class="lf-card-body">
               <div class="item-head"><span class="pill" [class.found]="i.kind === 'FOUND'">{{ i.kind }}</span>
                 <span class="muted">{{ i.status }}</span></div>
               <h3>{{ i.title }}</h3>
               <p>{{ i.description }}</p>
-              <small>📍 {{ i.location }} · {{ i.category }}</small>
+              <small>Location · {{ i.location }} · {{ i.category }}</small>
               <div class="lf-actions">
                 <button class="outline-btn" (click)="openItem(i)">View details</button>
                 <button class="outline-btn" *ngIf="canClaim(i)"
@@ -750,7 +744,7 @@
           <div class="admin-stats-grid">
             <div *ngFor="let metric of ['totalReports','lostReports','foundReports','unresolvedReports','inCustody','totalClaims','pendingClaims','completedHandovers']">
               <strong>{{ adminStats[metric] ?? '—' }}</strong>
-              <span>{{ metric }}</span>
+              <span>{{ metricLabels[metric] }}</span>
             </div>
           </div>
         </section>
@@ -761,9 +755,9 @@
           </div>
 
           <div class="admin-people-metrics">
-            <button type="button" [class.selected]="peopleTab === 'STUDENT'" (click)="peopleTab = 'STUDENT'"><span class="metric-symbol">🎓</span><strong>{{ countPeople('STUDENT') }}</strong><small>Students</small></button>
-            <button type="button" [class.selected]="peopleTab === 'TEACHER'" (click)="peopleTab = 'TEACHER'"><span class="metric-symbol">📚</span><strong>{{ countPeople('TEACHER') }}</strong><small>Teachers</small></button>
-            <button type="button" [class.selected]="peopleTab === 'STAFF'" (click)="peopleTab = 'STAFF'"><span class="metric-symbol">🛡</span><strong>{{ countPeople('STAFF') }}</strong><small>Lost &amp; Found staff</small></button>
+            <button type="button" [class.selected]="peopleTab === 'STUDENT'" (click)="peopleTab = 'STUDENT'"><span class="metric-symbol"><cc-icon name="campus" /></span><strong>{{ countPeople('STUDENT') }}</strong><small>Students</small></button>
+            <button type="button" [class.selected]="peopleTab === 'TEACHER'" (click)="peopleTab = 'TEACHER'"><span class="metric-symbol"><cc-icon name="book" /></span><strong>{{ countPeople('TEACHER') }}</strong><small>Teachers</small></button>
+            <button type="button" [class.selected]="peopleTab === 'STAFF'" (click)="peopleTab = 'STAFF'"><span class="metric-symbol"><cc-icon name="shield" /></span><strong>{{ countPeople('STAFF') }}</strong><small>Lost &amp; Found staff</small></button>
           </div>
 
           <section class="panel admin-employee-form" *ngIf="employeeFormOpen">
