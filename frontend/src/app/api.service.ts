@@ -144,6 +144,10 @@ export class ApiService {
     return this.http.post<any>(this.base + path, form, { headers: this.getHeaders() });
   }
 
+  getProfilePhoto(): Observable<Blob> {
+    return this.http.get(this.base + '/profile/photo', { headers: this.getHeaders(), responseType: 'blob' });
+  }
+
   getImage(id: number): Observable<Blob> {
     return this.http.get(this.base + '/images/' + id, {
       headers: this.getHeaders(), responseType: 'blob'

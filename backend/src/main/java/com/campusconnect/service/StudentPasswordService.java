@@ -53,12 +53,12 @@ public class StudentPasswordService {
     private String normalize(String email) {
         if (email == null || email.length() > 254) return "";
         String normalized = email.trim().toLowerCase(Locale.ROOT);
-        return normalized.matches("^[a-z0-9._%+-]+@" + Pattern.quote(domain) + "$") ? normalized : "";
+        return normalized.matches("^[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$") ? normalized : "";
     }
 
     private Optional<User> eligibleAccount(String email) {
         if (email.isEmpty()) return Optional.empty();
-        return users.lockByEmail(email).filter(u -> java.util.Set.of("STUDENT", "TEACHER", "STAFF").contains(u.getRole())
+        return users.lockByEmail(email).filter(u -> java.util.Set.of("STUDENT", "TEACHER", "STAFF", "ADMIN").contains(u.getRole())
                 && u.isAccountActive() && u.isEmailVerified());
     }
 

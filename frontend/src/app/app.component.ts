@@ -371,7 +371,10 @@ export class AppComponent implements OnInit {
         }
         this.user = user;
         this.email = user.email || '';
-        this.page = user.role === 'ADMIN' ? 'admin' : 'dashboard';
+        const requestedPage = this.routePage();
+        this.page = user.role === 'ADMIN' ? 'admin' : requestedPage;
+        const adminSection = new URLSearchParams(window.location.search).get('section');
+        if (user.role === 'ADMIN' && ['people', 'academics'].includes(adminSection || '')) this.adminSection = adminSection as 'people' | 'academics';
         this.refresh();
         this.loadMyClaims();
         if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); this.loadAdminDisputes(); }
@@ -381,6 +384,11 @@ export class AppComponent implements OnInit {
         this.logout();
       }
     });
+  }
+
+  private routePage(): string {
+    const page = new URLSearchParams(window.location.search).get('page');
+    return page && ['resources', 'papers', 'lost'].includes(page) ? page : 'dashboard';
   }
 
   get isAdmin(): boolean {

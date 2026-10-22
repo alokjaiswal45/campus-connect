@@ -4,7 +4,7 @@ Campus Connect ADMIN accounts manage portal access. They must not receive MySQL 
 
 ## Database setup (performed by a trusted database maintainer)
 
-1. Use the existing schema-maintenance account to create/upgrade tables, including `backend/db/migrations/003_student_password_resets.sql`. Keep that account out of the running backend.
+1. Use the existing schema-maintenance account to create/upgrade tables, including `backend/db/migrations/003_student_password_resets.sql` and `004_account_profiles.sql`. Keep that account out of the running backend.
 2. Create a separate account restricted to the backend host. For a local MySQL server, run the following in the MySQL client, replacing the placeholder with a strong generated secret:
 
 ```sql
@@ -23,8 +23,8 @@ Hibernate development auto-updates require a separate development/schema owner a
 
 ## Verification
 
-- ADMIN API responses and User JSON omit password hashes; student password changes require student authentication and the current password.
-- Student reset OTPs are separate from registration OTPs. They are hashed, expire in five minutes, allow five failed guesses, and are invalidated on successful password changes.
+- ADMIN API responses and User JSON omit password hashes; self-service password resets require a single-use OTP delivered to the account owner. The legacy student current-password endpoint still requires the authenticated student and current password.
+- Account reset OTPs are separate from registration OTPs. They are hashed, expire in five minutes, allow five failed guesses, and are invalidated on successful password changes.
 - Old Basic credentials fail on the next request after commit. Previously downloaded data cannot be revoked, and already in-flight requests may finish.
 - Password updates and access changes produce sanitized server audit logs. Restrict access and retention of those logs. Password-change emails never contain passwords or hashes.
 - Run the backend tests and Angular production build. Verify actual SMTP delivery with a real registered student mailbox; unit tests use a mocked mail sender.

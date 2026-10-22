@@ -12,12 +12,12 @@ import { ApiService } from './api.service';
       <div class="role-login-brand">✦ campus<span>connect</span></div>
       <p class="role-login-eyebrow">{{ section.toUpperCase() }} ACCOUNT</p>
       <h1>{{ changing ? 'Change password' : 'Reset password' }}</h1>
-      <p>{{ changing ? 'Confirm your current password before choosing a new one.' : 'Request a code at your registered college email. Only you can reset your password.' }}</p>
+      <p>{{ changing ? 'Confirm your current password before choosing a new one.' : 'Request a code at your registered email. Only you can reset your password.' }}</p>
       <p *ngIf="error" class="role-login-error" role="alert">{{ error }}</p>
       <p *ngIf="notice" role="status">{{ notice }}</p>
       <ng-container *ngIf="!done">
         <form *ngIf="!changing && !codeRequested" (ngSubmit)="requestCode()">
-          <label for="reset-email">College email</label>
+          <label for="reset-email">Registered email</label>
           <input id="reset-email" name="email" type="email" [(ngModel)]="email" maxlength="254" required autocomplete="username">
           <button type="submit" [disabled]="busy">{{ busy ? 'Requesting…' : 'Send reset code' }}</button>
         </form>
@@ -47,15 +47,15 @@ import { ApiService } from './api.service';
 export class StudentPasswordComponent {
   section: string = this.route.snapshot.data['section'] || 'student';
   changing = this.route.snapshot.data['change'] === true;
-  email = ''; otp = ''; currentPassword = ''; newPassword = ''; confirmation = '';
+  email = this.route.snapshot.queryParamMap.get('email') || '';  otp = ''; currentPassword = ''; newPassword = ''; confirmation = '';
   busy = false; done = false; codeRequested = false; error = ''; notice = ''; resendAt = 0;
   now(): number { return Date.now(); }
   constructor(private route: ActivatedRoute, private api: ApiService) {}
   requestCode(): void {
     if (this.busy || this.resendAt > Date.now()) return;
     this.error = '';
-    if (!/^[a-z0-9._%+-]+@bmsce\.ac\.in$/i.test(this.email.trim())) {
-      this.error = 'Enter your registered BMSCE college email.'; return;
+    if (!/^[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$/i.test(this.email.trim())) {
+      this.error = 'Enter your registered email.'; return;
     }
     this.email = this.email.trim().toLowerCase();
     this.busy = true;

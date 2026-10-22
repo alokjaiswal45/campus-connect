@@ -105,7 +105,7 @@
             <small>{{ user.role }}</small>
           </div>
 
-          <a *ngIf="user.role === 'STUDENT'" class="text-button" routerLink="/student/change-password">Change password</a>
+          <a class="text-button" [routerLink]="'/' + user.role.toLowerCase() + '/profile'">My profile</a>
           <button
             class="text-button"
             (click)="logout()">

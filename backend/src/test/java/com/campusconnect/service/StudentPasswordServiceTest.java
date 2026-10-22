@@ -35,7 +35,7 @@ class StudentPasswordServiceTest {
     @AfterEach void cleanup() { TransactionSynchronizationManager.clearSynchronization(); }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF", "ADMIN"})
     void employeesCanResetOnlyWithTheirSingleUseEmailCode(String role) {
         student.setRole(role);
         service.requestReset(student.getEmail());
@@ -58,7 +58,7 @@ class StudentPasswordServiceTest {
     }
 
     @org.junit.jupiter.params.ParameterizedTest
-    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF"})
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"TEACHER", "STAFF", "ADMIN"})
     void inactiveOrUnverifiedEmployeesCannotRequestOrUseResetCodes(String role) {
         student.setRole(role);
         student.setAccountActive(false);
@@ -70,6 +70,16 @@ class StudentPasswordServiceTest {
         assertFalse(service.reset(student.getEmail(), "123456", "new-password"));
         verifyNoInteractions(mail);
         verify(users, never()).saveAndFlush(any());
+    }
+
+    @Test void adminCanRecoverThroughItsProvisionedMailboxOutsideStudentDomain() {
+        student.setRole("ADMIN"); student.setEmail("admin@example.test");
+        when(users.lockByEmail("admin@example.test")).thenReturn(Optional.of(student));
+        service.requestReset(" ADMIN@example.test ");
+        var message = ArgumentCaptor.forClass(SimpleMailMessage.class);
+        verify(mail).send(message.capture());
+        assertEquals("admin@example.test", message.getValue().getTo()[0]);
+        verify(resets).saveAndFlush(any(PasswordReset.class));
     }
 
     @Test void notificationIsQueuedAfterCommitWithoutBlockingTheResponse() {
@@ -104,11 +114,11 @@ class StudentPasswordServiceTest {
         when(resets.countByEmailAndCreatedAtAfter(eq(student.getEmail()), any())).thenReturn(5L);
         service.requestReset(student.getEmail()); verifyNoInteractions(mail);
     }
-    @Test void missingUnverifiedInactiveAndAdminAccountsReceiveNoCode() {
+    @Test void missingUnverifiedInactiveAndUnknownRolesReceiveNoCode() {
         service.requestReset("missing@bmsce.ac.in");
         student.setEmailVerified(false); service.requestReset(student.getEmail());
         student.setEmailVerified(true); student.setAccountActive(false); service.requestReset(student.getEmail());
-        student.setAccountActive(true); student.setRole("ADMIN"); service.requestReset(student.getEmail());
+        student.setAccountActive(true); student.setRole("OTHER"); service.requestReset(student.getEmail());
         verifyNoInteractions(mail); verify(resets, never()).saveAndFlush(any());
     }
     @Test void incorrectCodeConsumesAttemptWithoutChangingPassword() {

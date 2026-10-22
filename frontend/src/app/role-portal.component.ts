@@ -21,7 +21,7 @@ import { ApiService } from './api.service';
           </ng-container>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'operations'" [disabled]="busy" (click)="staffTab = 'operations'; loadItems()"><cc-icon name="search" />Lost &amp; Found<span class="nav-count">{{ inventory.length }}</span></button>
           <button type="button" *ngIf="section === 'staff'" [class.active]="staffTab === 'storage'" [disabled]="busy" (click)="staffTab = 'storage'; loadItems()"><cc-icon name="folder" />Physical storage<span class="nav-count">{{ countInCustody() }}</span></button>
-          <button type="button" (click)="openPasswordReset()"><cc-icon name="shield" />Change password</button>
+          <button type="button" (click)="openProfile()"><cc-icon name="shield" />My profile</button>
         </nav>
         <div class="portal-sidebar-bottom"><div class="workspace-note"><cc-icon name="campus" /><strong>A more connected campus.</strong><p>{{ section === 'teacher' ? 'Your knowledge. Their next breakthrough.' : 'Small acts of care. A big difference.' }}</p></div><div class="sidebar-account"><span class="avatar">{{ user?.name?.[0] || 'C' }}</span><div><strong>{{ user?.name || label }}</strong><small>{{ label }} account</small></div></div><button type="button" class="sidebar-logout" (click)="logout()"><cc-icon name="logout" />Sign out</button></div>
       </aside>
@@ -119,50 +119,7 @@ import { ApiService } from './api.service';
           <ng-container *ngIf="staffTab === 'storage'">
             <div class="staff-toolbar">
               <input aria-label="Search physical storage" [(ngModel)]="storageSearch" placeholder="Search item, locker or receiving staff">
-              <button type="button" [disabled]="busy" (click)="loadItems()">↻ Refresh storage</button>
-            </div>
-          <section class="staff-storage-register" aria-label="Physical storage register">
-            <div class="storage-register-heading"><div><h3>Physical storage register</h3><p>Confirmed receipts remain saved with each item, including after handover.</p></div><span>{{ storedItems.length }} receipt(s)</span></div>
-            <div class="admin-table-scroll" *ngIf="filteredStoredItems.length; else noStoredItems"><table class="storage-register-table"><thead><tr><th>Item</th><th>Stored at</th><th>Received by</th><th>Received on</th><th>Current status</th><th></th></tr></thead><tbody><tr *ngFor="let stored of filteredStoredItems"><td><strong>#{{ stored.id }} · {{ stored.title }}</strong><small>{{ stored.kind }} report</small></td><td>{{ stored.custodyLocation }}</td><td>{{ stored.custodyAcceptedBy }}</td><td>{{ stored.custodyAcceptedAt | date:'medium' }}</td><td>{{ stored.status === 'RESOLVED' ? 'Handed over / resolved' : 'In staff custody' }}</td><td><button type="button" [disabled]="busy" (click)="selectItem(stored)">Open case</button></td></tr></tbody></table></div>
-            <ng-template #noStoredItems><p class="staff-info-note">No storage receipts match. Receive items from the Lost &amp; Found dashboard to record physical intake.</p></ng-template>
-          </section>
-          </ng-container>
-        </article>
-        <article *ngIf="section === 'teacher'" class="teacher-workspace">
-          <div class="teacher-heading"><div><p class="eyebrow">YOUR TEACHING TOOLKIT</p><h2>{{ teacherTab === 'browse' ? 'The academic collection' : 'Make your next contribution.' }}</h2><p>{{ teacherTab === 'browse' ? 'Organized by branch. Built for discovery.' : 'Good resources make great starting points.' }}</p></div><span class="teacher-library-label"><span></span>{{ documents.length }} PDFs in the library</span></div>
-          <nav class="teacher-tabs" aria-label="Teacher academic workspace">
-            <button type="button" [class.selected]="teacherTab === 'browse'" (click)="teacherTab = 'browse'"><cc-icon name="book" />Browse resources</button>
-            <button type="button" [class.selected]="teacherTab === 'upload'" (click)="openTeacherUpload()"><cc-icon name="upload" />Upload resource</button>
-          </nav>
-          <p *ngIf="error" class="role-login-error">{{ error }}</p><p *ngIf="notice" class="teacher-notice">{{ notice }}</p>
-          <div class="teacher-workbench">
-          <section *ngIf="teacherTab === 'browse'" class="teacher-hierarchy">
-            <div class="portal-section-head"><span class="portal-icon"><cc-icon name="book" /></span><div><h2>{{ teacherLibraryType === 'RESOURCE' ? 'Study Resources' : 'Question Papers' }}</h2><p>Your course materials, one well-organized shelf at a time.</p></div></div>
-            <nav class="teacher-type-switch"><button type="button" [class.selected]="teacherLibraryType === 'RESOURCE'" (click)="chooseTeacherType('RESOURCE')"><cc-icon name="book" />Study resources</button><button type="button" [class.selected]="teacherLibraryType === 'PAPER'" (click)="chooseTeacherType('PAPER')"><cc-icon name="file" />Question papers</button></nav>
-            <div class="teacher-breadcrumbs"><button type="button" (click)="teacherStep = 'branch'">Branches</button><ng-container *ngIf="teacherBranch"> / <button type="button" (click)="teacherStep = 'semester'">{{ teacherBranch.name }}</button></ng-container><ng-container *ngIf="teacherSemester"> / <button type="button" (click)="teacherStep = 'subject'">Semester {{ teacherSemester }}</button></ng-container><ng-container *ngIf="teacherSubject"> / <button type="button" (click)="teacherStep = 'folder'">{{ teacherSubject.name }}</button></ng-container><ng-container *ngIf="teacherStep === 'documents'"> / PDFs</ng-container></div>
-            <div *ngIf="teacherStep !== 'branch'" class="teacher-back-row"><button type="button" (click)="teacherBack()">← Back</button></div>
-            <ng-container *ngIf="teacherStep === 'branch'"><h3>Select your branch</h3><p>Choose your academic department.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let b of branches" class="teacher-folder" (click)="teacherBranch = b; teacherStep = 'semester'"><span class="teacher-folder-icon"><cc-icon name="campus" /></span><small>{{ b.code }}</small><strong>{{ b.name }}</strong><em>Open branch →</em></button></div><p *ngIf="!branches.length" class="teacher-library-empty">No branches available.</p></ng-container>
-            <ng-container *ngIf="teacherStep === 'semester'"><h3>{{ teacherBranch?.name }}</h3><p>Select your semester.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let sem of [1,2,3,4,5,6,7,8]" class="teacher-folder" (click)="teacherSemester = sem; teacherStep = 'subject'"><span class="teacher-folder-icon"><cc-icon name="book" /></span><strong>Semester {{ sem }}</strong><em>View subjects →</em></button></div></ng-container>
-            <ng-container *ngIf="teacherStep === 'subject'"><h3>Semester {{ teacherSemester }}</h3><p>Select a subject.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let s of teacherFolderSubjects" class="teacher-folder" (click)="teacherSubject = s; teacherStep = 'folder'"><span class="teacher-folder-icon"><cc-icon name="book" /></span><small>{{ s.code }}</small><strong>{{ s.name }}</strong><em>Open subject →</em></button></div><p *ngIf="!teacherFolderSubjects.length" class="teacher-library-empty">No subjects have been added for this semester.</p></ng-container>
-            <ng-container *ngIf="teacherStep === 'folder'"><h3>{{ teacherSubject?.name }}</h3><p>{{ teacherLibraryType === 'RESOURCE' ? 'Select a module to view study PDFs.' : 'Select an examination.' }}</p><div class="teacher-folder-grid"><button type="button" *ngFor="let n of (teacherLibraryType === 'RESOURCE' ? [1,2,3,4,5] : [])" class="teacher-folder" (click)="teacherModule = n; teacherStep = 'documents'"><span class="teacher-folder-icon"><cc-icon name="folder" /></span><strong>Module {{ n }}</strong><em>View PDFs →</em></button><button type="button" *ngFor="let exam of (teacherLibraryType === 'PAPER' ? ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY'] : [])" class="teacher-folder" (click)="teacherExam = exam; teacherStep = 'year'"><span class="teacher-folder-icon"><cc-icon name="folder" /></span><strong>{{ exam }}</strong><em>View years →</em></button></div></ng-container>
-            <ng-container *ngIf="teacherStep === 'year'"><h3>{{ teacherExam }}</h3><p>Select the academic year.</p><div class="teacher-folder-grid"><button type="button" *ngFor="let year of teacherYears" class="teacher-folder" (click)="teacherYear = year; teacherStep = 'documents'"><span class="teacher-folder-icon"><cc-icon name="calendar" /></span><strong>{{ year }}</strong><em>View PDFs →</em></button></div><p *ngIf="!teacherYears.length" class="teacher-library-empty">No papers uploaded for this exam yet.</p></ng-container>
-            <ng-container *ngIf="teacherStep === 'documents'"><h3>{{ teacherLibraryType === 'RESOURCE' ? 'Module ' + teacherModule : teacherExam + ' · ' + teacherYear }}</h3><p>{{ teacherFolderDocuments.length }} PDFs available</p><div class="teacher-resource-list"><article *ngFor="let doc of teacherFolderDocuments" class="teacher-resource-card"><div class="teacher-resource-symbol">PDF</div><div class="teacher-resource-details"><strong>{{ doc.title }}</strong><small>{{ doc.subject?.branch?.code }} · Semester {{ doc.subject?.semester }} · {{ doc.subject?.name }}</small></div><button type="button" (click)="openDocument(doc)">View PDF ↗</button></article></div><div *ngIf="!teacherFolderDocuments.length" class="teacher-library-empty">No PDFs uploaded yet. Use Upload Resource to add one.</div></ng-container>
-          </section>
-          <section *ngIf="teacherTab === 'upload'" class="teacher-upload-studio">
-          <div class="portal-section-head"><span class="portal-icon"><cc-icon name="book" /></span><div><h2>Academic resource studio</h2><p>Publish course notes and exam papers for students.</p></div></div>
-
-          <form (ngSubmit)="uploadDocument()" class="portal-form">
-            <label>Course subject <select name="subject" [(ngModel)]="newDoc.subjectId" required><option value="">Choose a subject</option><option *ngFor="let s of subjects" [value]="s.id">{{ s.branch?.code }} · Semester {{ s.semester }} · {{ s.name }}</option></select></label>
-            <label>Document title <input name="title" [(ngModel)]="newDoc.title" maxlength="255" placeholder="e.g. Module 2 · Data Structures" required></label>
-            <label>Material type <select name="type" [(ngModel)]="newDoc.type"><option value="RESOURCE">Lecture notes / study resource</option><option value="PAPER">Question paper</option></select></label>
-            <label *ngIf="newDoc.type === 'RESOURCE'">Module <select name="module" [(ngModel)]="newDoc.moduleNumber"><option value="">Choose module</option><option *ngFor="let m of [1,2,3,4,5]" [value]="m">Module {{ m }}</option></select></label>
-            <ng-container *ngIf="newDoc.type === 'PAPER'"><label>Exam <select name="exam" [(ngModel)]="newDoc.examType"><option value="">Choose exam</option><option *ngFor="let e of ['CIE 1','CIE 2','CIE 3','SEE','SUPPLEMENTARY']" [value]="e">{{ e }}</option></select></label><label>Exam year <input name="year" [(ngModel)]="newDoc.academicYear" maxlength="4" placeholder="2026"></label></ng-container>
-            <label class="pdf-upload-zone"><cc-icon name="upload" /><strong>{{ pdf?.name || 'Give your ideas a place to land.' }}</strong><span>Choose a PDF · up to 20 MB</span><input type="file" accept=".pdf,application/pdf" (change)="choosePdf($event)"></label>
-            <button type="submit" [disabled]="busy || !pdf || !newDoc.subjectId || !newDoc.title.trim() || (newDoc.type === 'RESOURCE' ? !newDoc.moduleNumber : !newDoc.examType || !newDoc.academicYear)">{{ busy ? 'Publishing…' : 'Publish resource ↗' }}</button>
-          </form>
-          </section>
-          <aside class="teacher-context-rail">
-            <section class="collection-summary" *ngIf="teacherTab === 'browse'"><div class="rail-title"><cc-icon name="grid" /><h3>At a glance</h3></div><div class="collection-total"><strong>{{ documents.length }}</strong><span>resources, ready to discover</span></div><dl><div><dt>Academic branches</dt><dd>{{ branches.length }}</dd></div><div><dt>Course subjects</dt><dd>{{ subjects.length }}</dd></div><div><dt>Study resources</dt><dd>{{ studyResourceCount }}</dd></div><div><dt>Question papers</dt><dd>{{ documents.length - studyResourceCount }}</dd></div></dl></section>
+              <button type="button" [disabled]="busy" (click)=…2652 tokens truncated…gIf="teacherTab === 'browse'"><div class="rail-title"><cc-icon name="grid" /><h3>At a glance</h3></div><div class="collection-total"><strong>{{ documents.length }}</strong><span>resources, ready to discover</span></div><dl><div><dt>Academic branches</dt><dd>{{ branches.length }}</dd></div><div><dt>Course subjects</dt><dd>{{ subjects.length }}</dd></div><div><dt>Study resources</dt><dd>{{ studyResourceCount }}</dd></div><div><dt>Question papers</dt><dd>{{ documents.length - studyResourceCount }}</dd></div></dl></section>
             <section class="resource-preview" *ngIf="teacherTab === 'upload'"><p class="eyebrow">YOUR NEXT RESOURCE</p><div class="preview-cover"><cc-icon [name]="newDoc.type === 'PAPER' ? 'file' : 'book'" /><span>{{ newDoc.type === 'PAPER' ? 'QUESTION PAPER' : 'STUDY RESOURCE' }}</span></div><h3>{{ newDoc.title || 'A fresh perspective starts here.' }}</h3><p>{{ pdf?.name || 'Add your PDF to complete this resource.' }}</p></section>
             <section class="teacher-rail-note"><span class="note-spark"><cc-icon name="spark" /></span><h3>A little sharing.<br>A lasting impact.</h3><p>One useful note can make a difficult concept click. Add something your students will thank you for.</p><button type="button" *ngIf="teacherTab === 'browse'" (click)="openTeacherUpload()">Share your knowledge<cc-icon name="arrow" /></button><p *ngIf="teacherTab === 'upload'" class="upload-checklist">01 · Choose the right subject<br>02 · Give it a clear title<br>03 · Add your PDF and publish</p></section>
           </aside>
@@ -259,7 +216,7 @@ export class RolePortalComponent implements OnInit {
   pdf: File | null = null;
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
-  openPasswordReset(): void { this.router.navigateByUrl('/' + this.section + '/forgot-password'); }
+  openProfile(): void { this.router.navigateByUrl('/' + this.section + '/profile'); }
   staffTab: 'operations' | 'storage' = 'operations';
   storageSearch = '';
   get filteredStoredItems(): any[] {
@@ -320,6 +277,9 @@ export class RolePortalComponent implements OnInit {
   error = '';
   constructor(private route: ActivatedRoute, private router: Router, private api: ApiService) {}
   ngOnInit(): void {
+    const tab = this.route.snapshot.queryParamMap.get('tab');
+    if (tab === 'storage') this.staffTab = 'storage';
+    if (tab === 'upload') this.teacherTab = 'upload';
     this.api.get('/auth/me').subscribe({ next: user => this.user = user });
     if (this.section === 'staff') this.loadItems();
     if (this.section === 'teacher') this.loadTeacherLibrary();
