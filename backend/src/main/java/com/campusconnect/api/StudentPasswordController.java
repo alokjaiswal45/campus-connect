@@ -24,6 +24,7 @@ public class StudentPasswordController {
 
     @PostMapping("/password-reset/request")
     public ResponseEntity<?> request(@RequestBody RequestReset request) {
+        long started = System.nanoTime();
         try {
             mailAvailability.ensureReady();
             passwords.requestReset(request == null ? null : request.email());
@@ -31,6 +32,8 @@ public class StudentPasswordController {
             log.warn("Password reset request could not be processed ({})", ex.getClass().getSimpleName());
             return ResponseEntity.status(503).body(Map.of("error",
                     "Email service is temporarily unavailable. Please try again later."));
+        } finally {
+            log.info("Password reset code request completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
         }
         return ResponseEntity.ok(Map.of("message", "If this is an active, verified student account, a reset code will be sent to its registered college email. Wait at least 60 seconds before requesting another code."));
     }
@@ -38,7 +41,10 @@ public class StudentPasswordController {
     @PostMapping("/password-reset/confirm")
     public ResponseEntity<?> reset(@RequestBody Reset request) {
         if (request == null || !StudentPasswordService.validPassword(request.newPassword())) return invalidPassword();
-        if (!passwords.reset(request.email(), request.otp(), request.newPassword())) {
+        long started = System.nanoTime();
+        boolean updated = passwords.reset(request.email(), request.otp(), request.newPassword());
+        log.info("Password reset verification completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
+        if (!updated) {
             return ResponseEntity.badRequest().body(Map.of("error", "Reset failed. Check the code, use a different password, or request a new code if it expired."));
         }
         return success();

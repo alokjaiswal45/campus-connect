@@ -32,13 +32,16 @@ public class StudentPasswordService {
     private final JavaMailSender mail;
     private final String sender;
     private final String domain;
+    private final java.util.concurrent.Executor notificationExecutor;
 
     public StudentPasswordService(UserRepository users, PasswordResetRepository resets,
             PasswordEncoder encoder, JavaMailSender mail,
             @Value("${spring.mail.username:}") String sender,
-            @Value("${app.allowed-email-domain:bmsce.ac.in}") String domain) {
+            @Value("${app.allowed-email-domain:bmsce.ac.in}") String domain,
+            @org.springframework.beans.factory.annotation.Qualifier("passwordMailExecutor") java.util.concurrent.Executor notificationExecutor) {
         this.users = users; this.resets = resets; this.encoder = encoder; this.mail = mail;
         this.sender = sender;
+        this.notificationExecutor = notificationExecutor;
         this.domain = domain.trim().toLowerCase(Locale.ROOT).replaceFirst("^@", "");
     }
 
@@ -122,12 +125,17 @@ public class StudentPasswordService {
         TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
             @Override public void afterCommit() {
                 try {
-                    send(user.getEmail(), "Campus Connect - Your password changed",
-                            "Your Campus Connect password was changed. Existing logins using the old password no longer work. "
-                            + "If this was not you, reset your password immediately through the student portal and contact campus support.");
+                    notificationExecutor.execute(() -> {
+                        try {
+                            send(user.getEmail(), "Campus Connect - Your password changed",
+                                    "Your Campus Connect password was changed. Existing logins using the old password no longer work. "
+                                    + "If this was not you, reset your password through the student portal and contact campus support.");
+                        } catch (RuntimeException ex) {
+                            log.warn("Password change notification failed for account id={}", user.getId());
+                        }
+                    });
                 } catch (RuntimeException ex) {
-                    // Never roll back a successful password change or log SMTP message bodies/secrets.
-                    log.warn("Password change notification failed for account id={}", user.getId());
+                    log.warn("Password change notification could not be queued for account id={}", user.getId());
                 }
             }
         });

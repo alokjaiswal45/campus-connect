@@ -27,6 +27,7 @@ import static org.mockito.Mockito.*;
 class StudentPasswordTransactionTest {
     @TestConfiguration static class Crypto {
         @Bean PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(4); }
+        @Bean(name = "passwordMailExecutor") java.util.concurrent.Executor notificationExecutor() { return Runnable::run; }
     }
     @Autowired StudentPasswordService service;
     @Autowired UserRepository users;

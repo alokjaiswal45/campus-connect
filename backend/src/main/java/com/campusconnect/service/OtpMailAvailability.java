@@ -11,9 +11,22 @@ import org.springframework.stereotype.Service;
 public class OtpMailAvailability {
     private static final Logger log = LoggerFactory.getLogger(OtpMailAvailability.class);
     private final JavaMailSender mail;
-    public OtpMailAvailability(JavaMailSender mail) { this.mail = mail; }
+    private final java.util.function.LongSupplier clock;
+    private long nextCheck = Long.MIN_VALUE;
+    private boolean ready;
 
-    public void ensureReady() {
+    @org.springframework.beans.factory.annotation.Autowired
+    public OtpMailAvailability(JavaMailSender mail) { this(mail, System::nanoTime); }
+    OtpMailAvailability(JavaMailSender mail, java.util.function.LongSupplier clock) {
+        this.mail = mail; this.clock = clock;
+    }
+
+    public synchronized void ensureReady() {
+        long now = clock.getAsLong();
+        if (now < nextCheck) {
+            if (ready) return;
+            throw new IllegalStateException("Email service is temporarily unavailable.");
+        }
         if (mail instanceof JavaMailSenderImpl smtp) {
             try {
                 // Authenticate without sending a message, for all requested addresses alike.
@@ -24,8 +37,12 @@ public class OtpMailAvailability {
                 log.error("OTP sender connection/authentication failed ({}). Check spring.mail.username, "
                         + "spring.mail.password, SMTP host/port and TLS. For Gmail, use an App Password "
                         + "belonging to the configured sender account.", ex.getClass().getSimpleName());
+                ready = false;
+                nextCheck = clock.getAsLong() + java.util.concurrent.TimeUnit.SECONDS.toNanos(5);
                 throw new IllegalStateException("Email service is temporarily unavailable.");
             }
         }
+        ready = true;
+        nextCheck = clock.getAsLong() + java.util.concurrent.TimeUnit.SECONDS.toNanos(60);
     }
 }

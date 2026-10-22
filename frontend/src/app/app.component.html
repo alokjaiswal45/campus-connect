@@ -614,8 +614,8 @@
               <div class="item-head"><span class="pill" [class.found]="i.kind === 'FOUND'">{{ i.kind }}</span>
                 <span class="muted">{{ i.status }}</span></div>
               <h3>{{ i.title }}</h3>
-              <p>{{ i.description }}</p>
-              <small>Location · {{ i.location }} · {{ i.category }}</small>
+              <p *ngIf="i.kind === 'LOST' && i.description">{{ i.description }}</p>
+              <small>Location · {{ i.location }}<span *ngIf="i.kind === 'LOST' && i.category"> · {{ i.category }}</span></small>
               <div class="lf-actions">
                 <button class="outline-btn" (click)="openItem(i)">View details</button>
                 <button class="outline-btn" *ngIf="canClaim(i)"
@@ -632,8 +632,8 @@
           <button class="outline-btn" (click)="closeItem()">Close details ×</button>
           <h2>{{ i.title }}</h2>
           <div class="lf-photo-gallery"><img *ngFor="let url of itemPhotoUrls" [src]="url" alt="Uploaded item photograph"></div>
-          <p>{{ i.description }}</p>
-          <p>Location: {{ i.location }} · Category: {{ i.category }} · Status: {{ i.status }}</p>
+          <p *ngIf="i.kind === 'LOST' && i.description">{{ i.description }}</p>
+          <p>Location: {{ i.location }}<span *ngIf="i.kind === 'LOST' && i.category"> · Category: {{ i.category }}</span> · Status: {{ i.status }}</p>
           <button class="primary-btn" *ngIf="canClaim(i) && !claimFormOpen" (click)="openClaim(i)">Claim ownership</button>
           <section *ngIf="claimFor(i) as claim">
             <h3>Your claim · {{ claim.status }}</h3>
@@ -669,19 +669,19 @@
 
         <div class="panel form-panel lf-report">
           <h2>Report an item</h2>
-          <p *ngIf="newItem.kind === 'FOUND'">After reporting, deposit the item at the Lost &amp; Found department. Staff will confirm receipt, verify claims and hand it over to its owner.</p>
+          <p *ngIf="newItem.kind === 'FOUND'">Use a general item name. Keep unique marks, contents and serial numbers private for staff verification, including in any optional photo. After reporting, deposit the item at the Lost &amp; Found department. Staff will confirm receipt, verify claims and hand it over to its owner.</p>
           <ng-container *ngIf="user?.role === 'STUDENT'; else lfLogin">
             <label>Report type
               <select [(ngModel)]="newItem.kind"><option value="LOST">I lost something</option><option value="FOUND">I found something</option></select>
             </label>
-            <label>Item name <input [(ngModel)]="newItem.title" maxlength="255" placeholder="Black water bottle"></label>
-            <label>Category <input [(ngModel)]="newItem.category" maxlength="100" placeholder="Electronics"></label>
-            <label>Location <input [(ngModel)]="newItem.location" maxlength="255" placeholder="Library, second floor"></label>
-            <label>Description <textarea [(ngModel)]="newItem.description" maxlength="3000" placeholder="Describe the item"></textarea></label>
+            <label>Item name <input [(ngModel)]="newItem.title" maxlength="255" [placeholder]="newItem.kind === 'FOUND' ? 'Water bottle' : 'Black water bottle'"></label>
+            <label *ngIf="newItem.kind === 'LOST'">Category <input [(ngModel)]="newItem.category" maxlength="100" placeholder="Electronics"></label>
+            <label>{{ newItem.kind === 'FOUND' ? 'Where was it found?' : 'Location' }} <input [required]="newItem.kind === 'FOUND'" [(ngModel)]="newItem.location" maxlength="255" placeholder="Library, second floor"></label>
+            <label *ngIf="newItem.kind === 'LOST'">Description <textarea [(ngModel)]="newItem.description" maxlength="3000" placeholder="Describe the item"></textarea></label>
             <label>Optional item photograph (JPEG or PNG, max 5 MB)
               <input type="file" accept="image/jpeg,image/png" (change)="chooseReportPhoto($event)">
             </label>
-            <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim()">Post report →</button>
+            <button class="primary-btn" (click)="addItem()" [disabled]="!newItem.title.trim() || (newItem.kind === 'FOUND' && !newItem.location.trim())">Post report →</button>
           </ng-container>
           <ng-template #lfLogin><p>Only students can submit Lost &amp; Found reports. Administrators can review reports in the administration dashboard.</p></ng-template>
         </div>

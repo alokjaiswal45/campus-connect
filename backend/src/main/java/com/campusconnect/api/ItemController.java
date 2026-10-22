@@ -6,6 +6,7 @@ import com.campusconnect.repo.ItemClaimRepository;
 import com.campusconnect.repo.ClaimDisputeRepository;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -33,8 +34,9 @@ public class ItemController {
             String location, String category, String kind, String status,
             String postedBy, Instant createdAt) {
         static PublicItem from(LostItem item) {
-            return new PublicItem(item.id, item.title, item.description, item.location,
-                    item.category, item.kind, item.status, item.postedBy, item.createdAt);
+            boolean found = "FOUND".equalsIgnoreCase(item.kind);
+            return new PublicItem(item.id, item.title, found ? null : item.description, item.location,
+                    found ? null : item.category, item.kind, item.status, item.postedBy, item.createdAt);
         }
     }
 
@@ -47,18 +49,22 @@ public class ItemController {
     public ResponseEntity<PublicItem> create(@RequestBody ItemRequest request, Authentication auth) {
         if (request == null || request.title() == null || request.title().isBlank()
                 || request.title().length() > 255 || request.kind() == null
-                || !List.of("LOST", "FOUND").contains(request.kind().toUpperCase())
+                || !List.of("LOST", "FOUND").contains(request.kind().toUpperCase(Locale.ROOT))
                 || request.description() != null && request.description().length() > 3000
                 || request.location() != null && request.location().length() > 255
                 || request.category() != null && request.category().length() > 100) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid item report");
         }
+        boolean found = "FOUND".equalsIgnoreCase(request.kind());
+        if (found && (request.location() == null || request.location().isBlank())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Where the item was found is required");
+        }
         LostItem item = new LostItem();
         item.title = request.title().trim();
-        item.description = request.description();
-        item.location = request.location();
-        item.category = request.category();
-        item.kind = request.kind().toUpperCase();
+        item.description = found ? null : request.description();
+        item.location = found ? request.location().trim() : request.location();
+        item.category = found ? null : request.category();
+        item.kind = request.kind().toUpperCase(Locale.ROOT);
         item.postedBy = auth.getName();
         item.status = "OPEN";
         item.createdAt = Instant.now();

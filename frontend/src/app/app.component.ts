@@ -399,6 +399,10 @@ export class AppComponent implements OnInit {
       return body;
     }
 
+    if (typeof body?.detail === 'string' && body.detail.trim()) {
+      return body.detail;
+    }
+
     if (typeof body?.error === 'string' && body.error.trim()) {
       return body.error;
     }
@@ -1095,7 +1099,14 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.api.post('/items', this.newItem).subscribe({
+    if (this.newItem.kind === 'FOUND' && !this.newItem.location.trim()) {
+      this.error = 'Please enter where the item was found.';
+      return;
+    }
+    const report = this.newItem.kind === 'FOUND'
+      ? { kind: 'FOUND', title: this.newItem.title.trim(), location: this.newItem.location.trim() }
+      : this.newItem;
+    this.api.post('/items', report).subscribe({
 
       next: (item: any) => {
 

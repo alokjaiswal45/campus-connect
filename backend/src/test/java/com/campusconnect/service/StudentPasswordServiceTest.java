@@ -19,7 +19,7 @@ class StudentPasswordServiceTest {
     PasswordResetRepository resets = mock(PasswordResetRepository.class);
     JavaMailSender mail = mock(JavaMailSender.class);
     BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(4);
-    StudentPasswordService service = new StudentPasswordService(users, resets, encoder, mail, "sender@example.test", "bmsce.ac.in");
+    StudentPasswordService service = new StudentPasswordService(users, resets, encoder, mail, "sender@example.test", "bmsce.ac.in", Runnable::run);
     User student;
     PasswordReset reset;
 
@@ -33,6 +33,18 @@ class StudentPasswordServiceTest {
         TransactionSynchronizationManager.initSynchronization();
     }
     @AfterEach void cleanup() { TransactionSynchronizationManager.clearSynchronization(); }
+
+    @Test void notificationIsQueuedAfterCommitWithoutBlockingTheResponse() {
+        java.util.List<Runnable> queued = new java.util.ArrayList<>();
+        StudentPasswordService queuedService = new StudentPasswordService(users, resets, encoder, mail,
+                "sender@example.test", "bmsce.ac.in", queued::add);
+        assertTrue(queuedService.change(student.getEmail(), "old-password", "new-password"));
+        TransactionSynchronizationManager.getSynchronizations().forEach(sync -> sync.afterCommit());
+        assertEquals(1, queued.size());
+        verifyNoInteractions(mail);
+        queued.get(0).run();
+        verify(mail).send(any(SimpleMailMessage.class));
+    }
 
     @Test void onlyHashedCodeIsStoredAndSentToRegisteredCollegeEmail() {
         service.requestReset(" Student@BMSCE.ac.in ");

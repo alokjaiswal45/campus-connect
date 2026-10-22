@@ -52,10 +52,10 @@ import { ApiService } from './api.service';
               <button type="button" [class.selected]="staffFilter === 'FOUND'" (click)="staffFilter = 'FOUND'">Found</button>
             </nav>
             <input aria-label="Search reported items" [(ngModel)]="staffSearch" placeholder="Search item, description, location">
-            <button type="button" (click)="loadItems()">↻ Refresh</button>
+            <button type="button" [disabled]="busy" (click)="loadItems()">↻ Refresh</button>
           </div>
           <div class="staff-inventory">
-            <button type="button" *ngFor="let item of filteredInventory" class="inventory-entry" [class.selected]="item.id === itemId" (click)="selectItem(item)">
+            <button type="button" *ngFor="let item of filteredInventory" class="inventory-entry" [class.selected]="item.id === itemId" [disabled]="busy" (click)="selectItem(item)">
               <div class="staff-report-thumb"><img *ngIf="staffPhotos[item.id]" [src]="staffPhotos[item.id]" [alt]="'Photo of ' + item.title" loading="lazy"><cc-icon *ngIf="!staffPhotos[item.id]" [name]="item.kind === 'LOST' ? 'search' : 'folder'" /></div>
               <span class="staff-item-kind" [class.is-lost]="item.kind === 'LOST'">{{ item.kind }}</span>
               <strong>{{ item.title }}</strong>
@@ -64,6 +64,11 @@ import { ApiService } from './api.service';
               <span class="staff-custody-tag" *ngIf="item.custodyAcceptedAt">✓ In custody: {{ item.custodyLocation }}</span>
             </button>
           </div>
+          <section class="staff-storage-register" aria-label="Physical storage register">
+            <div class="storage-register-heading"><div><h3>Physical storage register</h3><p>Confirmed receipts remain saved with each item, including after handover.</p></div><span>{{ storedItems.length }} receipt(s)</span></div>
+            <div class="admin-table-scroll" *ngIf="storedItems.length; else noStoredItems"><table class="storage-register-table"><thead><tr><th>Item</th><th>Stored at</th><th>Received by</th><th>Received on</th><th>Current status</th><th></th></tr></thead><tbody><tr *ngFor="let stored of storedItems"><td><strong>#{{ stored.id }} · {{ stored.title }}</strong><small>{{ stored.kind }} report</small></td><td>{{ stored.custodyLocation }}</td><td>{{ stored.custodyAcceptedBy }}</td><td>{{ stored.custodyAcceptedAt | date:'medium' }}</td><td>{{ stored.status === 'RESOLVED' ? 'Handed over / resolved' : 'In staff custody' }}</td><td><button type="button" [disabled]="busy" (click)="selectItem(stored)">Open case</button></td></tr></tbody></table></div>
+            <ng-template #noStoredItems><p class="staff-info-note">No physical receipts recorded yet. Select an item and confirm intake once it is present at the desk.</p></ng-template>
+          </section>
           <p *ngIf="filteredInventory.length === 0" class="teacher-library-empty">No reports match this filter.</p>
           <section *ngIf="selectedStaffItem as selected" class="staff-case-panel">
             <div class="portal-section-head"><span class="portal-icon">⌘</span><div><h2>{{ selected.title }} <small>#{{ selected.id }}</small></h2><p>{{ selected.kind }} report · {{ selected.status }} · Reported by {{ selected.postedBy }}</p></div></div>
@@ -77,16 +82,19 @@ import { ApiService } from './api.service';
             <ng-container>
               <div *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt" class="staff-intake-form">
                 <h3>1. Receive item into custody</h3>
+                <p class="staff-info-note">This item has no confirmed storage receipt yet. Typing a location does not save it; click Confirm physical intake once.</p>
                 <p>Confirm the item is physically present and record its exact secure storage location.</p>
                 <label>Storage location <input [(ngModel)]="storageLocation" maxlength="255" placeholder="e.g. Lost & Found desk · Locked cabinet A1"></label>
                 <button type="button" [disabled]="busy || !storageLocation.trim()" (click)="intake()">Confirm physical intake</button>
               </div>
               <div *ngIf="selected.custodyAcceptedAt" class="staff-custody-confirmed">
-                <strong>✓ Item in custody</strong>
-                <span>Stored at {{ selected.custodyLocation }} · Received by {{ selected.custodyAcceptedBy }}</span>
+                <strong>{{ selected.status === 'RESOLVED' ? '✓ Storage receipt · item resolved' : '✓ Physical intake confirmed' }}</strong>
+                <dl class="custody-receipt"><div><dt>Item</dt><dd>#{{ selected.id }} · {{ selected.title }}</dd></div><div><dt>Storage location</dt><dd>{{ selected.custodyLocation }}</dd></div><div><dt>Received by</dt><dd>{{ selected.custodyAcceptedBy }}</dd></div><div><dt>Received on</dt><dd>{{ selected.custodyAcceptedAt | date:'medium' }}</dd></div></dl>
               </div>
+              <div class="staff-case-feedback" *ngIf="error || notice || busy" [class.has-error]="!!error" [attr.role]="error ? 'alert' : 'status'" aria-live="polite">{{ error || (busy ? 'Saving your action…' : notice) }}</div>
               <h3>2. Verify ownership claims</h3>
-              <p>Review the claimant's private description and evidence before approval. An item must be in custody before approval.</p>
+              <p>Review the claimant's private description and evidence before approval.</p>
+              <p class="staff-info-note" *ngIf="selected.status === 'OPEN' && !selected.custodyAcceptedAt">Approval is unavailable until the physical intake above is successfully saved.</p>
               <button type="button" (click)="loadClaims()" [disabled]="busy">↻ Refresh claims</button>
               <p *ngIf="claims.length === 0" class="staff-info-note">No claims submitted for this item.</p>
               <div *ngFor="let claim of claims" class="staff-claim">
@@ -242,13 +250,24 @@ export class RolePortalComponent implements OnInit {
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
   inventory: any[] = [];
+  private inventoryGeneration = 0;
+  private claimsGeneration = 0;
+  get storedItems(): any[] { return this.inventory.filter(item => !!item.custodyAcceptedAt); }
+  private updateInventoryItem(item: any): void {
+    const index = this.inventory.findIndex(existing => existing.id === item.id);
+    this.inventory = index < 0 ? [...this.inventory, item]
+      : this.inventory.map(existing => existing.id === item.id ? { ...existing, ...item } : existing);
+  }
+  private staffError(err: any, fallback: string): string {
+    return err.error?.detail || err.error?.error || err.error?.message || fallback;
+  }
   recoveryConfirmed = false;
   staffFilter: 'ALL' | 'LOST' | 'FOUND' = 'ALL';
   staffSearch = '';
   get filteredInventory(): any[] {
     const q = this.staffSearch.trim().toLowerCase();
     return this.inventory.filter(i => (this.staffFilter === 'ALL' || i.kind === this.staffFilter) &&
-      (!q || [i.title, i.description, i.location, i.category].some(v => String(v || '').toLowerCase().includes(q))));
+      (!q || [String(i.id), i.title, i.description, i.location, i.category, i.custodyLocation, i.custodyAcceptedBy].some(v => String(v || '').toLowerCase().includes(q))));
   }
   get selectedStaffItem(): any { return this.inventory.find(i => i.id === this.itemId) || null; }
   countItems(kind: string): number { return this.inventory.filter(i => i.kind === kind).length; }
@@ -307,14 +326,24 @@ export class RolePortalComponent implements OnInit {
     });
   }
   intake(): void {
-    if (!this.itemId || this.selectedStaffItem?.kind !== 'FOUND' || !this.storageLocation.trim()) return;
-    this.busy = true;
-    this.error = '';
-    this.api.put('/staff/items/' + this.itemId + '/intake', {
-      storageLocation: this.storageLocation.trim()
-    }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Item received into custody.'; this.loadItems(); },
-      error: () => { this.busy = false; this.error = 'Could not receive item. It may already be in custody.'; }
+    const item = this.selectedStaffItem;
+    if (this.busy || !item) return;
+    if (item.custodyAcceptedAt) { this.notice = 'Intake is already saved at ' + item.custodyLocation + '.'; return; }
+    if (item.status !== 'OPEN' || !this.storageLocation.trim()) {
+      this.error = 'Choose an open report and enter its storage location.'; return;
+    }
+    const itemId = item.id;
+    this.busy = true; this.error = ''; this.notice = '';
+    ++this.inventoryGeneration; // Ignore inventory reads started before this write.
+    this.api.put('/staff/items/' + itemId + '/intake', { storageLocation: this.storageLocation.trim() }).subscribe({
+      next: receipt => {
+        this.updateInventoryItem(receipt);
+        this.storageLocation = receipt.custodyLocation;
+        this.busy = false;
+        this.notice = 'Physical intake saved: ' + receipt.title + ' · ' + receipt.custodyLocation + '.';
+        this.loadItems();
+      },
+      error: err => { this.busy = false; this.error = this.staffError(err, 'Unable to save intake. Refresh this case to check its current receipt.'); }
     });
   }
   resolveLostReport(): void {
@@ -348,13 +377,20 @@ export class RolePortalComponent implements OnInit {
     });
   }
   loadItems(): void {
+    const generation = ++this.inventoryGeneration;
     this.api.get('/staff/items/inventory').subscribe({
-      next: (items: any[]) => { this.inventory = items; this.loadStaffPhotos(items); },
-      error: () => this.error = 'Unable to load inventory.'
+      next: (items: any[]) => {
+        if (generation !== this.inventoryGeneration) return;
+        this.inventory = items;
+        this.loadStaffPhotos(items);
+        if (this.selectedStaffItem?.custodyAcceptedAt) this.storageLocation = this.selectedStaffItem.custodyLocation;
+      },
+      error: () => { if (generation === this.inventoryGeneration) this.error = 'Unable to refresh inventory. Your last saved receipt is still shown.'; }
     });
   }
   selectItem(item: any): void {
-    this.recoveryConfirmed = false;
+    if (this.busy) return;
+    this.recoveryConfirmed = false; this.error = ''; this.notice = '';
     this.itemId = item.id;
     this.storageLocation = item.custodyLocation || '';
     this.claims = [];
@@ -362,34 +398,48 @@ export class RolePortalComponent implements OnInit {
   }
   loadClaims(): void {
     if (!this.itemId) return;
-    this.error = '';
-    this.notice = '';
-    this.api.get('/staff/items/' + this.itemId + '/claims').subscribe({
-      next: claims => this.claims = claims,
-      error: () => this.error = 'Unable to load claims for this item.'
+    const itemId = this.itemId;
+    const generation = ++this.claimsGeneration;
+    this.api.get('/staff/items/' + itemId + '/claims').subscribe({
+      next: claims => { if (itemId === this.itemId && generation === this.claimsGeneration) this.claims = claims; },
+      error: () => { if (itemId === this.itemId && generation === this.claimsGeneration) this.error = 'Unable to refresh claims. Try again.'; }
     });
   }
   review(claim: any, approve: boolean): void {
-    this.busy = true;
-    this.error = '';
+    if (this.busy || claim.status !== 'PENDING') return;
+    if (approve && !this.selectedStaffItem?.custodyAcceptedAt) {
+      this.error = 'Save the physical intake before approving this claim.'; return;
+    }
+    this.busy = true; this.error = ''; this.notice = '';
+    ++this.claimsGeneration;
     this.api.put('/staff/claims/' + claim.id + '/review', { approve }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Claim reviewed.'; this.loadClaims(); },
-      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Review failed.'; }
+      next: reviewed => {
+        this.claims = this.claims.map(existing => existing.id === reviewed.id ? { ...existing, ...reviewed } : existing);
+        this.busy = false;
+        this.notice = approve ? 'Claim approved. Verify the student ID and pickup reference before handover.' : 'Claim rejected.';
+        this.loadClaims();
+      },
+      error: err => { this.busy = false; this.error = this.staffError(err, 'Review failed. Check custody, disputes and reviewer eligibility.'); }
     });
   }
   handover(claim: any): void {
-    if (!claim.collegeIdChecked || !claim.enteredReference) {
-      this.error = 'Check the college ID and enter the pickup reference.';
-      return;
+    if (this.busy) return;
+    if (!claim.collegeIdChecked || !claim.enteredReference?.trim()) {
+      this.error = 'Check the college ID and enter the pickup reference.'; return;
     }
-    this.busy = true;
-    this.error = '';
+    this.busy = true; this.error = ''; this.notice = '';
+    ++this.claimsGeneration; ++this.inventoryGeneration;
     this.api.put('/staff/claims/' + claim.id + '/handover', {
-      pickupReference: claim.enteredReference,
-      collegeIdChecked: claim.collegeIdChecked
+      pickupReference: claim.enteredReference.trim(), collegeIdChecked: claim.collegeIdChecked
     }).subscribe({
-      next: () => { this.busy = false; this.notice = 'Handover recorded.'; this.loadClaims(); this.loadItems(); },
-      error: (err: any) => { this.busy = false; this.error = err.error?.message || 'Handover failed.'; }
+      next: handedOver => {
+        this.claims = this.claims.map(existing => existing.id === handedOver.id ? { ...existing, ...handedOver } : existing);
+        const item = this.inventory.find(existing => existing.id === handedOver.itemId);
+        if (item) this.updateInventoryItem({ ...item, status: 'RESOLVED' });
+        this.busy = false; this.notice = 'Verified handover recorded. The storage receipt remains in the register.';
+        this.loadClaims(); this.loadItems();
+      },
+      error: err => { this.busy = false; this.error = this.staffError(err, 'Handover failed. Check the student ID and pickup reference.'); }
     });
   }
   logout(): void {

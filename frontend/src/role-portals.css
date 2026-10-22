@@ -264,3 +264,22 @@
 }
 
 .teacher-tabs button cc-icon, .teacher-type-switch button cc-icon { width: 15px; height: 15px; flex-basis: 15px; }
+
+/* Staff custody receipts and action feedback. */
+.staff-storage-register { border: 1px solid var(--line); border-radius: 12px; margin: 26px 0; overflow: hidden; }
+.storage-register-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px; background: #f8faf4; }
+.storage-register-heading h3 { margin: 0 0 6px; font-size: 16px; }
+.storage-register-heading p { font-size: 11px; color: var(--muted); margin: 0; }
+.storage-register-heading>span { font-size: 10px; white-space: nowrap; color: var(--green); }
+.storage-register-table { width: 100%; min-width: 780px; border-collapse: collapse; text-align: left; font-size: 11px; }
+.storage-register-table th { padding: 14px 18px; background: #f1f5eb; font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #5c7054; }
+.storage-register-table td { padding: 17px 18px; border-top: 1px solid var(--line); max-width: 240px; overflow-wrap: anywhere; }
+.storage-register-table td strong, .storage-register-table td small { display: block; }
+.storage-register-table td small { color: var(--muted); margin-top: 4px; }
+.staff-storage-register>.staff-info-note { margin: 20px; }
+.custody-receipt { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 15px; margin: 14px 0 0; }
+.custody-receipt dt { font-size: 9px; text-transform: uppercase; letter-spacing: 1px; color: #58785d; margin-bottom: 5px; }
+.custody-receipt dd { font-size: 12px; margin: 0; overflow-wrap: anywhere; font-weight: 600; }
+.staff-case-feedback { position: sticky; top: 12px; z-index: 2; padding: 16px 20px; border: 1px solid #cddfce; border-radius: 9px; background: #edf6e9; color: #356447; font-size: 12px; box-shadow: 0 4px 12px #2038250c; margin: 20px 0; }
+.staff-case-feedback.has-error { background: #fff3ed; border-color: #e8c4b5; color: #9b3e25; }
+@media(max-width:600px) { .custody-receipt { grid-template-columns: 1fr; } .storage-register-heading { align-items: flex-start; flex-direction: column; } }

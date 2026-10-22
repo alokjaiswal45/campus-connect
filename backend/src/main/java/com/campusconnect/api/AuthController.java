@@ -170,6 +170,7 @@ private final EmailValidator emailValidator;
 
         String email = normalizeEmail(request.email());
 
+        long started = System.nanoTime();
         try {
             mailAvailability.ensureReady();
             otpService.sendOtp(email);
@@ -209,6 +210,8 @@ private final EmailValidator emailValidator;
                             "Unable to send verification email right now. Please try again later."
                     )
             );
+        } finally {
+            log.info("Registration code request completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
         }
     }
 
@@ -236,10 +239,12 @@ private final EmailValidator emailValidator;
 
         try {
 
+            long started = System.nanoTime();
             boolean verified = otpService.verifyOtp(
                     normalizeEmail(request.email()),
                     request.otp()
             );
+            log.info("Registration OTP verification completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
 
             if (!verified) {
                 return ResponseEntity.badRequest().body(

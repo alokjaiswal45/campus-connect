@@ -25,6 +25,52 @@ class ItemControllerTest {
                     java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_STAFF")));
 
     @Test
+    void foundReportDiscardsIdentifyingDetails() {
+        when(repository.save(any(LostItem.class))).thenAnswer(invocation -> {
+            LostItem saved = invocation.getArgument(0);
+            assertNull(saved.description);
+            assertNull(saved.category);
+            assertEquals("Bottle", saved.title);
+            assertEquals("Library", saved.location);
+            return saved;
+        });
+        var result = controller.create(new ItemController.ItemRequest(
+                " Bottle ", "Secret engraving", " Library ", "Unique contents", "FOUND"), student);
+        assertNull(result.getBody().description());
+        assertNull(result.getBody().category());
+        verify(repository).save(any(LostItem.class));
+    }
+
+    @Test
+    void foundReportRequiresLocation() {
+        for (String location : new String[] {null, "", "   "}) {
+            var error = assertThrows(ResponseStatusException.class, () -> controller.create(
+                    new ItemController.ItemRequest("Bottle", null, location, null, "FOUND"), student));
+            assertEquals(HttpStatus.BAD_REQUEST, error.getStatusCode());
+        }
+        verifyNoInteractions(repository);
+    }
+
+    @Test
+    void publicListingHidesOlderFoundDetailsAndPreservesLostDetails() {
+        LostItem found = new LostItem();
+        found.kind = "FOUND";
+        found.description = "Private engraving";
+        found.category = "Private contents";
+        LostItem lost = new LostItem();
+        lost.kind = "LOST";
+        lost.description = "Blue bottle";
+        lost.category = "Other";
+        when(repository.findAll()).thenReturn(java.util.List.of(found, lost));
+        var result = controller.all();
+        assertNull(result.get(0).description());
+        assertNull(result.get(0).category());
+        assertEquals("Private engraving", found.description);
+        assertEquals("Blue bottle", result.get(1).description());
+        assertEquals("Other", result.get(1).category());
+    }
+
+    @Test
     void staffCannotBypassVerifiedHandoverForRecoveredLostItemInCustody() {
         LostItem item = new LostItem();
         item.kind = "LOST";
