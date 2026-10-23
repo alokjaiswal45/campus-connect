@@ -2,13 +2,14 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
+import { CampusSceneComponent } from './campus-scene.component';
 import { AccountLinkComponent } from './account-link.component';
 import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent, CampusSceneComponent],
   templateUrl: './role-portal.component.html'
 })
 export class RolePortalComponent implements OnInit {

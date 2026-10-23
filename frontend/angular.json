@@ -21,7 +21,8 @@
             ],
             "tsConfig": "tsconfig.app.json",
             "styles": [
-              "src/styles.css"
+              "src/styles.css",
+              "src/premium.css"
             ]
           },
           "configurations": {

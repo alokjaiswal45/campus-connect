@@ -17,13 +17,12 @@
       <header class="portal-topbar"><div class="breadcrumb">Workspace <span>/</span><b>{{ section === 'teacher' ? (teacherTab === 'upload' ? 'Resource studio' : 'Academic library') : (staffTab === 'storage' ? 'Physical storage' : 'Lost & Found') }}</b></div><div class="portal-topbar-right"><span class="status">● BMSCE campus</span><cc-account-link [section]="section" [user]="user" /></div></header>
       <div class="portal-content">
       <section class="role-portal-welcome">
-        <div class="welcome-copy"><p class="eyebrow">{{ section === 'teacher' ? 'THE FACULTY WORKSPACE' : 'THE CAMPUS CARE DESK' }}</p>
-        <h1>{{ section === 'teacher' ? 'Good teaching starts' : 'Every belonging' }}<br><em>{{ section === 'teacher' ? 'with a little sharing.' : 'has a way home.' }}</em></h1>
+        <div class="welcome-copy"><p class="eyebrow">{{ section === 'teacher' ? 'THE FACULTY COLLECTION' : 'THE CAMPUS CARE DESK' }}</p>
+        <h1>{{ section === 'teacher' ? 'Ideas find a home.' : 'Every belonging' }}<br><em>{{ section === 'teacher' ? 'Knowledge travels.' : 'deserves a way home.' }}</em></h1>
         <p>{{ section === 'teacher' ? 'A thoughtful home for your notes, question papers and everything your students need to move forward.' : 'Receive, safeguard and reunite. Manage campus reports and verified handovers in one place.' }}</p>
         <button type="button" class="hero-publish" *ngIf="section === 'teacher'" (click)="openTeacherUpload()"><cc-icon name="upload" />Publish a resource<cc-icon name="arrow" /></button>
         </div>
-        <div class="faculty-art" *ngIf="section === 'teacher'" aria-hidden="true"><div class="art-orbit"></div><div class="art-note art-note-back"><span>IDEAS WORTH SHARING</span><i></i><i></i><i></i></div><div class="art-note art-note-front"><cc-icon name="book" /><strong>Knowledge,<br>passed forward.</strong><span>THE CAMPUS COLLECTION</span></div><div class="art-seal"><cc-icon name="spark" /></div></div>
-        <div class="care-art" *ngIf="section === 'staff'" aria-hidden="true"><cc-icon name="shield" /></div>
+        <div class="workspace-plate"><cc-campus-scene [caption]="section === 'teacher' ? 'THE FACULTY COLLECTION' : 'THE CAMPUS CARE DESK'" /></div>
       </section>
       <section class="role-portal-grid">
         <article *ngIf="section === 'staff'" class="staff-workspace">

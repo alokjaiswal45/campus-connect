@@ -50,8 +50,8 @@
 
     <div class="sidebar-bottom">
       <div class="help">
-        <cc-icon name="campus" /> <strong>Made for students</strong>
-        <p>Everything you need for a better campus experience.</p>
+        <cc-icon name="campus" /> <strong>{{ isAdmin ? 'Made for campus' : 'Made for students' }}</strong>
+        <p>{{ isAdmin ? 'A thoughtful workspace for the people behind campus life.' : 'Everything you need for a better campus experience.' }}</p>
       </div>
 
       <div class="copyright">
@@ -130,12 +130,12 @@
           <div class="hero-copy">
 
             <div class="eyebrow">
-              WELCOME TO YOUR CAMPUS HUB
+              THE CAMPUS COLLECTION · STUDENT WORKSPACE
             </div>
 
             <h1>
-              Everything campus.
-              <em>One connection.</em>
+              A place to learn.
+              <em>A place to belong.</em>
             </h1>
 
             <p>
@@ -151,17 +151,7 @@
 
           </div>
 
-          <div class="hero-art">
-            <div class="floating f1">
-              <cc-icon name="book" /> <span>Study smarter</span>
-            </div>
-
-            <div class="hero-circle"><cc-icon name="spark" /></div>
-
-            <div class="floating f2">
-              ✓ <span>Stay connected</span>
-            </div>
-          </div>
+          <div class="hero-art"><cc-campus-scene caption="THE STUDENT COLLECTION" /></div>
 
         </div>
 
@@ -218,7 +208,7 @@
         <div class="feature-grid">
 
           <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('resources')" (keydown.space)="$event.preventDefault(); nav('resources')" (click)="nav('resources')">
-            <div class="feature-visual violet"><cc-icon name="book" /></div>
+            <div class="feature-visual violet"><span class="collection-index">01 / THE LIBRARY</span><cc-icon name="book" /><span class="collection-caption">KNOWLEDGE, SHARED.</span></div>
 
             <div class="feature-body">
               <span class="feature-tag">ACADEMICS</span>
@@ -232,7 +222,7 @@
           </div>
 
           <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('papers')" (keydown.space)="$event.preventDefault(); nav('papers')" (click)="nav('papers')">
-            <div class="feature-visual peach"><cc-icon name="file" /></div>
+            <div class="feature-visual peach"><span class="collection-index">02 / THE EXAM ARCHIVE</span><cc-icon name="file" /><span class="collection-caption">PREPARE WITH PERSPECTIVE.</span></div>
 
             <div class="feature-body">
               <span class="feature-tag">EXAM PREP</span>
@@ -246,7 +236,7 @@
           </div>
 
           <div class="feature" role="button" tabindex="0" (keydown.enter)="nav('lost')" (keydown.space)="$event.preventDefault(); nav('lost')" (click)="nav('lost')">
-            <div class="feature-visual mint"><cc-icon name="search" /></div>
+            <div class="feature-visual mint"><span class="collection-index">03 / THE COMMUNITY DESK</span><cc-icon name="search" /><span class="collection-caption">BELONGINGS, RECONNECTED.</span></div>
 
             <div class="feature-body">
               <span class="feature-tag">COMMUNITY</span>
@@ -690,17 +680,17 @@
         </div>
 
         <nav class="admin-section-nav" *ngIf="isAdmin" aria-label="Administration sections">
-          <button [class.active]="adminSection === 'overview'" (click)="selectAdminSection('overview')">▦ Overview</button>
-          <button [class.active]="adminSection === 'people'" (click)="selectAdminSection('people')">♙ People &amp; access</button>
-          <button [class.active]="adminSection === 'academics'" (click)="selectAdminSection('academics')">▤ Branches &amp; subjects</button>
-          <button [class.active]="adminSection === 'lostfound'" (click)="selectAdminSection('lostfound')">◇ Lost &amp; Found review</button>
+          <button [class.active]="adminSection === 'overview'" (click)="selectAdminSection('overview')"><cc-icon name="grid" />Overview</button>
+          <button [class.active]="adminSection === 'people'" (click)="selectAdminSection('people')"><cc-icon name="campus" />People &amp; access</button>
+          <button [class.active]="adminSection === 'academics'" (click)="selectAdminSection('academics')"><cc-icon name="book" />Branches &amp; subjects</button>
+          <button [class.active]="adminSection === 'lostfound'" (click)="selectAdminSection('lostfound')"><cc-icon name="shield" />Lost &amp; Found review</button>
         </nav>
         <section *ngIf="isAdmin && adminSection === 'overview'" class="admin-overview">
           <div class="admin-overview-intro"><h2>Campus administration</h2><p>Select a workspace to manage accounts, academics, or Lost &amp; Found reviews.</p></div>
           <div class="admin-overview-grid">
-            <button (click)="selectAdminSection('people')"><span>♙</span><strong>People &amp; access</strong><small>Browse students, teachers, and staff; create or terminate employee access.</small><b>Open directory ↗</b></button>
-            <button (click)="selectAdminSection('academics')"><span>▤</span><strong>Academic structure</strong><small>Organize branches, subjects, and semesters.</small><b>Manage academics ↗</b></button>
-            <button (click)="selectAdminSection('lostfound')"><span>◇</span><strong>Lost &amp; Found oversight</strong><small>Review reports, analytics, and ownership disputes.</small><b>Review cases ↗</b></button>
+            <button (click)="selectAdminSection('people')"><span><cc-icon name="campus" /></span><strong>People &amp; access</strong><small>Browse students, teachers, and staff; create or terminate employee access.</small><b>Open directory ↗</b></button>
+            <button (click)="selectAdminSection('academics')"><span><cc-icon name="book" /></span><strong>Academic structure</strong><small>Organize branches, subjects, and semesters.</small><b>Manage academics ↗</b></button>
+            <button (click)="selectAdminSection('lostfound')"><span><cc-icon name="shield" /></span><strong>Lost &amp; Found oversight</strong><small>Review reports, analytics, and ownership disputes.</small><b>Review cases ↗</b></button>
           </div>
         </section>
         <div *ngIf="!isAdmin" class="panel empty">
@@ -729,7 +719,7 @@
             <button class="outline-btn" (click)="resolveDispute(dispute, false)">Dismiss dispute</button>
           </article>
         </section>
-        <section class="panel" *ngIf="isAdmin">
+        <section class="panel" *ngIf="isAdmin && adminSection === 'lostfound'">
           <h2>Campus Lost &amp; Found overview</h2>
           <button class="outline-btn" (click)="loadAdminStats()">Refresh analytics</button>
           <div class="admin-stats-grid">

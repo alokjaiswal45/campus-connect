@@ -3,23 +3,25 @@ import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ApiService } from './api.service';
+import { CampusSceneComponent } from './campus-scene.component';
 import { destination } from './portal-routing';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink, CampusSceneComponent],
   template: `
-    <main class="role-login">
+    <main class="role-login editorial-login">
+      <aside class="login-editorial"><div class="login-editorial-brand">✦ campus<span>connect</span></div><div class="login-editorial-copy"><p class="eyebrow">THE CAMPUS COLLECTION</p><h2>Good things happen<br>when campus<br><em>comes together.</em></h2><p>A shared home for knowledge, community<br>and everything that connects us.</p></div><cc-campus-scene caption="LEARN. SHARE. BELONG." /><span class="login-editorial-footer">BMS COLLEGE OF ENGINEERING · BENGALURU</span></aside>
       <section class="role-login-card">
         <div class="role-login-brand">✦ campus<span>connect</span></div>
         <p class="role-login-eyebrow">{{ sectionLabel }} PORTAL</p>
         <h1>{{ sectionLabel }} sign in</h1>
-        <p>Sign in with your verified BMSCE college account.</p>
+        <p>Your campus workspace is ready. Sign in to continue.</p>
         <form (ngSubmit)="login()">
-          <label>College email</label>
-          <input name="email" type="email" [(ngModel)]="email" autocomplete="username" required />
-          <label>Password</label>
-          <input name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
+          <label for="login-email">Registered email</label>
+          <input id="login-email" name="email" type="email" [(ngModel)]="email" autocomplete="username" required />
+          <label for="login-password">Password</label>
+          <input id="login-password" name="password" type="password" [(ngModel)]="password" autocomplete="current-password" required />
           <p *ngIf="error" class="role-login-error">{{ error }}</p>
           <button type="submit" [disabled]="loading">{{ loading ? 'Signing in…' : 'Sign in' }}</button>
         </form>
