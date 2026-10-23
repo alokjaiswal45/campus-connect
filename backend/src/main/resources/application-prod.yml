@@ -1,0 +1,10 @@
+# Runtime account has only SELECT, INSERT, UPDATE and DELETE on campus_connect.*.
+# Apply schema migrations separately with a schema-maintenance account.
+spring:
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/campus_connect}
+    username: ${DB_USER:campus_connect_app}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: validate

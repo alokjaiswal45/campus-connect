@@ -80,7 +80,7 @@ public class ItemClaimController {
     @GetMapping("/staff/items/inventory")
     public List<StaffItemView> inventory() {
         // Desk staff need visibility into all student reports (LOST and FOUND).
-        // Physical intake and ownership claims remain restricted to FOUND items.
+        // Intake requires physical receipt, regardless of the original report type.
         return items.findAll().stream().map(StaffItemView::from).toList();
     }
 
@@ -90,17 +90,21 @@ public class ItemClaimController {
             Authentication auth) {
         LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only open found items can be received");
-        }
-        if (item.custodyAcceptedAt != null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Item already in custody");
-        }
         if (request == null || request.storageLocation() == null
                 || request.storageLocation().isBlank() || request.storageLocation().length() > 255) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Storage location required");
         }
-        item.custodyAcceptedAt = Instant.now();
+        if (item.custodyAcceptedAt != null) {
+            if (request.storageLocation().trim().equals(item.custodyLocation)) {
+                return StaffItemView.from(item); // A repeated PUT returns the original receipt.
+            }
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Item already stored at " + item.custodyLocation + ". Existing storage receipt was not changed.");
+        }
+        if (!"OPEN".equals(item.status)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Only open reports can be received");
+        }
+        item.custodyAcceptedAt = Instant.now().truncatedTo(java.time.temporal.ChronoUnit.MICROS);
         item.custodyAcceptedBy = auth.getName();
         item.custodyLocation = request.storageLocation().trim();
         return StaffItemView.from(items.save(item));
@@ -118,7 +122,7 @@ public class ItemClaimController {
         }
         LostItem item = items.lockById(itemId).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Item not found"));
-        if (!"FOUND".equalsIgnoreCase(item.kind) || !"OPEN".equals(item.status)) {
+        if (!"OPEN".equals(item.status)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Item is not available for claims");
         }
         if (auth.getName().equalsIgnoreCase(item.postedBy)) {

@@ -23,7 +23,43 @@ class ItemClaimControllerTest {
             new UsernamePasswordAuthenticationToken("desk@bmsce.ac.in", "unused");
 
     @Test
-    void inventoryOnlyReturnsFoundItemsAndRetainsStaffCustodyDetails() {
+    void ownershipClaimOnLostReportReachesStaffWithPrivateDetails() {
+        LostItem item = new LostItem();
+        item.id = 10L;
+        item.kind = "LOST";
+        item.status = "OPEN";
+        item.postedBy = "reporter@bmsce.ac.in";
+        when(items.lockById(10L)).thenReturn(Optional.of(item));
+        when(claims.save(any(ItemClaim.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var claimant = new UsernamePasswordAuthenticationToken("owner@bmsce.ac.in", "unused");
+        var response = controller.claim(10L,
+                new ItemClaimController.ClaimRequest("Lost at library; my initials are inside the case"), claimant);
+        assertEquals("PENDING", response.getBody().status());
+        assertEquals("owner@bmsce.ac.in", response.getBody().claimantEmail());
+        var saved = org.mockito.ArgumentCaptor.forClass(ItemClaim.class);
+        verify(claims).save(saved.capture());
+        when(claims.findByItemIdOrderByCreatedAtDesc(10L)).thenReturn(java.util.List.of(saved.getValue()));
+        var staffClaims = controller.forItem(10L);
+        assertEquals(response.getBody().ownershipAnswer(), staffClaims.get(0).ownershipAnswer());
+        assertEquals("owner@bmsce.ac.in", staffClaims.get(0).claimantEmail());
+    }
+
+    @Test
+    void recoveredLostItemCanBePhysicallyReceivedBeforeClaimApproval() {
+        LostItem item = new LostItem();
+        item.id = 10L;
+        item.kind = "LOST";
+        item.status = "OPEN";
+        when(items.lockById(10L)).thenReturn(Optional.of(item));
+        when(items.save(item)).thenReturn(item);
+        var intake = controller.intake(10L, new ItemClaimController.IntakeRequest("Locker B"), staff);
+        assertNotNull(intake.custodyAcceptedAt());
+        assertEquals("Locker B", intake.custodyLocation());
+        assertEquals("desk@bmsce.ac.in", intake.custodyAcceptedBy());
+    }
+
+    @Test
+    void inventoryReturnsLostAndFoundReportsAndRetainsStaffCustodyDetails() {
         LostItem found = new LostItem();
         found.id = 1L;
         found.kind = "FOUND";
@@ -33,9 +69,11 @@ class ItemClaimControllerTest {
         lost.kind = "LOST";
         when(items.findAll()).thenReturn(java.util.List.of(found, lost));
         var inventory = controller.inventory();
-        assertEquals(1, inventory.size());
+        assertEquals(2, inventory.size());
         assertEquals(1L, inventory.get(0).id());
         assertEquals("Staff locker A", inventory.get(0).custodyLocation());
+        assertEquals(2L, inventory.get(1).id());
+        assertEquals("LOST", inventory.get(1).kind());
     }
 
     @Test

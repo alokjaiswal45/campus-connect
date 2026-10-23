@@ -4,6 +4,7 @@ package com.campusconnect.api;
 import com.campusconnect.model.User;
 import com.campusconnect.repo.UserRepository;
 import com.campusconnect.service.EmailOtpService;
+import com.campusconnect.service.OtpMailAvailability;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,7 @@ public class AuthController {
     private final UserRepository users;
     private final PasswordEncoder encoder;
     private final EmailOtpService otpService;
+    private final OtpMailAvailability mailAvailability;
     private final String allowedDomain;
 private final EmailValidator emailValidator;
 
@@ -36,6 +38,7 @@ private final EmailValidator emailValidator;
             UserRepository users,
             PasswordEncoder encoder,
             EmailOtpService otpService,
+            OtpMailAvailability mailAvailability,
             EmailValidator emailValidator,
             @Value("${app.allowed-email-domain:bmsce.ac.in}")
             String allowedDomain
@@ -43,6 +46,7 @@ private final EmailValidator emailValidator;
         this.users = users;
         this.encoder = encoder;
         this.otpService = otpService;
+        this.mailAvailability = mailAvailability;
         this.emailValidator = emailValidator;
         this.allowedDomain = allowedDomain.trim()
                 .toLowerCase(Locale.ROOT)
@@ -83,7 +87,7 @@ private final EmailValidator emailValidator;
                 request.email().length() > 254 ||
                 request.password() == null ||
                 request.password().length() < 8 ||
-                request.password().length() > 72) {
+                request.password().getBytes(java.nio.charset.StandardCharsets.UTF_8).length > 72) {
 
             return ResponseEntity.badRequest().body(
                     Map.of(
@@ -166,7 +170,9 @@ private final EmailValidator emailValidator;
 
         String email = normalizeEmail(request.email());
 
+        long started = System.nanoTime();
         try {
+            mailAvailability.ensureReady();
             otpService.sendOtp(email);
 
             log.info("OTP request processed");
@@ -204,6 +210,8 @@ private final EmailValidator emailValidator;
                             "Unable to send verification email right now. Please try again later."
                     )
             );
+        } finally {
+            log.info("Registration code request completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
         }
     }
 
@@ -231,10 +239,12 @@ private final EmailValidator emailValidator;
 
         try {
 
+            long started = System.nanoTime();
             boolean verified = otpService.verifyOtp(
                     normalizeEmail(request.email()),
                     request.otp()
             );
+            log.info("Registration OTP verification completed in {} ms", java.util.concurrent.TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - started));
 
             if (!verified) {
                 return ResponseEntity.badRequest().body(

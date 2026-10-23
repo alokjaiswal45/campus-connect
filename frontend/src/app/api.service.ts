@@ -51,7 +51,9 @@ export class ApiService {
     return [
       '/auth/register',
       '/auth/send-otp',
-      '/auth/verify-otp'
+      '/auth/verify-otp',
+    '/auth/password-reset/request',
+    '/auth/password-reset/confirm'
     ].includes(path.split('?')[0]);
   }
 
@@ -140,6 +142,10 @@ export class ApiService {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<any>(this.base + path, form, { headers: this.getHeaders() });
+  }
+
+  getProfilePhoto(): Observable<Blob> {
+    return this.http.get(this.base + '/profile/photo', { headers: this.getHeaders(), responseType: 'blob' });
   }
 
   getImage(id: number): Observable<Blob> {

@@ -4,6 +4,10 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { StudentDashboardComponent } from './student-dashboard.component';
+import { CampusSceneComponent } from './campus-scene.component';
+import { AccountLinkComponent } from './account-link.component';
+import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 type LibraryStep =
@@ -17,12 +21,15 @@ type LibraryStep =
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent, CampusSceneComponent, StudentDashboardComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
 
   page = 'dashboard';
+  dashboardSearchActive = false;
+  searchFromDashboard(query: string): void { this.nav('resources'); this.search = query; this.dashboardSearchActive = !!query; if(query) this.libraryStep = 'documents'; }
+  viewDashboardItem(item: any): void { this.nav('lost'); this.openItem(item); }
 
   user: any = null;
 
@@ -42,6 +49,10 @@ export class AppComponent implements OnInit {
   lostFilter: 'ALL' | 'LOST' | 'FOUND' | 'UNRESOLVED' = 'ALL';
   selectedItem: any = null;
   claimAnswer = '';
+  claimLostDetails = '';
+  claimProof = '';
+  claimFormOpen = false;
+  claimSubmitting = false;
   reportPhoto: File | null = null;
   evidencePhoto: File | null = null;
   itemPhotoUrls: string[] = [];
@@ -139,27 +150,60 @@ export class AppComponent implements OnInit {
       .slice().reverse();
   }
 
+  claimFor(item: any): any {
+    return this.myClaims.find(claim => claim.itemId === item.id);
+  }
+
+  canClaim(item: any): boolean {
+    return this.user?.role === 'STUDENT' && item.status === 'OPEN'
+      && this.user.email?.toLowerCase() !== item.postedBy?.toLowerCase()
+      && !this.myClaims.some(claim => claim.itemId === item.id);
+  }
+
+  openClaim(item: any): void {
+    this.openItem(item);
+    this.claimFormOpen = true;
+    setTimeout(() => document.querySelector('.lf-details')?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+  }
+
   openItem(item: any): void {
     this.selectedItem = item;
+    this.claimFormOpen = false;
+    this.claimLostDetails = '';
+    this.claimProof = '';
+    this.evidencePhoto = null;
     this.claimAnswer = '';
     this.loadItemPhotos(item.id);
   }
   closeItem(): void { this.selectedItem = null; this.revokeItemPhotos(); }
 
   submitClaim(): void {
-    if (!this.selectedItem || this.claimAnswer.trim().length < 10) {
-      this.error = 'Describe at least 10 characters of private ownership evidence.';
+    if (this.claimSubmitting) return;
+    if (!this.selectedItem || !this.canClaim(this.selectedItem) || this.claimAnswer.trim().length < 10 || this.claimLostDetails.trim().length < 5) {
+      this.error = 'Enter where and when you lost the item and at least 10 characters of identifying details.';
       return;
     }
+    const evidence = this.evidencePhoto;
+    if (evidence && (!['image/jpeg', 'image/png'].includes(evidence.type) || evidence.size > 5 * 1024 * 1024)) {
+      this.error = 'Choose a JPEG or PNG image under 5 MB.';
+      return;
+    }
+    this.claimSubmitting = true;
     this.error = '';
     this.api.post('/items/' + this.selectedItem.id + '/claims', {
-      ownershipAnswer: this.claimAnswer.trim()
+      ownershipAnswer: 'Lost where/when: ' + this.claimLostDetails.trim()
+        + '\nIdentifying details: ' + this.claimAnswer.trim()
+        + '\nAdditional proof: ' + this.claimProof.trim()
     }).subscribe({
       next: (claim: any) => {
-        this.notice = 'Claim submitted privately for staff review.';
-        if (this.evidencePhoto) {
-          this.uploadPhoto('/claims/' + claim.id + '/evidence', this.evidencePhoto,
-            'Claim and private evidence image submitted.');
+        this.claimSubmitting = false;
+        this.myClaims = [claim, ...this.myClaims];
+        this.notice = 'Ownership claim sent to Lost & Found staff for verification.';
+        if (evidence) {
+          this.api.uploadImage('/claims/' + claim.id + '/evidence', evidence).subscribe({
+            next: () => this.notice = 'Ownership claim and private proof image sent to Lost & Found staff.',
+            error: () => this.error = 'Your claim was saved, but the proof image failed to upload. Staff can still review your written details.'
+          });
         }
         this.evidencePhoto = null;
         this.closeItem();
@@ -167,7 +211,10 @@ export class AppComponent implements OnInit {
         this.loadMyClaims();
         this.loadMyDisputes();
       },
-      error: (err: any) => this.error = this.errorMessage(err, 'Unable to submit claim.')
+      error: (err: any) => {
+        this.claimSubmitting = false;
+        this.error = this.errorMessage(err, 'Unable to submit claim.');
+      }
     });
   }
 
@@ -202,10 +249,10 @@ export class AppComponent implements OnInit {
   // Admin forms
   newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
   campusUsers: any[] = [];
-  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'overview';
-  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'STUDENT';
+  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'people';
+  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'TEACHER';
   peopleSearch = '';
-  employeeFormOpen = false;
+  employeeFormOpen = true;
   employeeSaving = false;
   employeeTerminatingId: number | null = null;
   get filteredCampusUsers(): any[] {
@@ -214,13 +261,22 @@ export class AppComponent implements OnInit {
       (!query || [u.name, u.email, u.role].some((v: string) => String(v || '').toLowerCase().includes(query))));
   }
   countPeople(role: string): number { return this.campusUsers.filter(u => u.role === role).length; }
+  selectedDirectoryAccount: any = null;
+  adminNavigate(section: 'overview' | 'people' | 'academics' | 'lostfound'): void { this.nav('admin'); this.selectAdminSection(section); this.selectedDirectoryAccount = null; }
+  scrollEmployeeForm(): void { setTimeout(() => document.querySelector('.admin-employee-form')?.scrollIntoView({block:'center',behavior:'smooth'})); }
   selectAdminSection(section: 'overview' | 'people' | 'academics' | 'lostfound'): void {
+    this.selectedDirectoryAccount = null;
     this.adminSection = section;
     if (section === 'people') this.loadCampusUsers();
     if (section === 'lostfound') { this.loadAdminStats(); this.loadAdminDisputes(); }
   }
 
-  adminStats: Record<string, number> = {};
+  adminStats: Record<string, number | undefined> = {};
+  readonly metricLabels: Record<string, string> = {
+    totalReports: 'Total reports', lostReports: 'Lost reports', foundReports: 'Found reports',
+    unresolvedReports: 'Unresolved reports', inCustody: 'In staff custody', totalClaims: 'Ownership claims',
+    pendingClaims: 'Pending review', completedHandovers: 'Completed handovers'
+  };
   loadAdminStats(): void {
     this.api.get('/admin/analytics').subscribe({
       next: stats => this.adminStats = stats,
@@ -235,12 +291,20 @@ export class AppComponent implements OnInit {
       next: () => {
         this.employeeSaving = false;
         this.notice = 'Employee account created.';
-        this.employeeFormOpen = false;
+        this.employeeFormOpen = true;
         this.peopleTab = this.newStaff.role as 'TEACHER' | 'STAFF';
         this.newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
         this.loadCampusUsers();
       },
       error: (err: any) => { this.employeeSaving = false; this.error = this.errorMessage(err, 'Unable to create employee account.'); }
+    });
+  }
+  toggleStudentAccess(account: any): void {
+    if (this.employeeTerminatingId !== null) return;
+    this.employeeTerminatingId = account.id;
+    this.api.put('/admin/users/' + account.id + '/student-access', { active: !account.accountActive }).subscribe({
+      next: () => { this.employeeTerminatingId = null; this.notice = 'Student account access updated.'; this.loadCampusUsers(); },
+      error: (err: any) => { this.employeeTerminatingId = null; this.error = this.errorMessage(err, 'Unable to update student access.'); }
     });
   }
   terminateEmployee(account: any): void {
@@ -317,7 +381,10 @@ export class AppComponent implements OnInit {
         }
         this.user = user;
         this.email = user.email || '';
-        this.page = user.role === 'ADMIN' ? 'admin' : 'dashboard';
+        const requestedPage = this.routePage();
+        this.page = user.role === 'ADMIN' ? 'admin' : requestedPage;
+        const adminSection = new URLSearchParams(window.location.search).get('section');
+        if (user.role === 'ADMIN' && ['people', 'academics'].includes(adminSection || '')) this.adminSection = adminSection as 'people' | 'academics';
         this.refresh();
         this.loadMyClaims();
         if (this.isAdmin) { this.loadCampusUsers(); this.loadAdminStats(); this.loadAdminDisputes(); }
@@ -327,6 +394,11 @@ export class AppComponent implements OnInit {
         this.logout();
       }
     });
+  }
+
+  private routePage(): string {
+    const page = new URLSearchParams(window.location.search).get('page');
+    return page && ['resources', 'papers', 'lost'].includes(page) ? page : 'dashboard';
   }
 
   get isAdmin(): boolean {
@@ -343,6 +415,10 @@ export class AppComponent implements OnInit {
 
     if (typeof body === 'string' && body.trim()) {
       return body;
+    }
+
+    if (typeof body?.detail === 'string' && body.detail.trim()) {
+      return body.detail;
     }
 
     if (typeof body?.error === 'string' && body.error.trim()) {
@@ -524,6 +600,7 @@ export class AppComponent implements OnInit {
   // ==========================================
 
   get libraryDocuments(): any[] {
+    if (this.dashboardSearchActive) return this.filteredDocs;
 
     if (!this.selectedLibrarySubject) {
       return [];
@@ -587,6 +664,7 @@ export class AppComponent implements OnInit {
   // ==========================================
 
   resetLibrary(): void {
+    this.dashboardSearchActive = false;
 
     this.libraryStep = 'branch';
 
@@ -601,6 +679,7 @@ export class AppComponent implements OnInit {
   }
 
   selectLibraryBranch(branch: any): void {
+    this.dashboardSearchActive = false;
 
     this.selectedLibraryBranch = branch;
 
@@ -1041,7 +1120,14 @@ export class AppComponent implements OnInit {
       return;
     }
 
-    this.api.post('/items', this.newItem).subscribe({
+    if (this.newItem.kind === 'FOUND' && !this.newItem.location.trim()) {
+      this.error = 'Please enter where the item was found.';
+      return;
+    }
+    const report = this.newItem.kind === 'FOUND'
+      ? { kind: 'FOUND', title: this.newItem.title.trim(), location: this.newItem.location.trim() }
+      : this.newItem;
+    this.api.post('/items', report).subscribe({
 
       next: (item: any) => {
 

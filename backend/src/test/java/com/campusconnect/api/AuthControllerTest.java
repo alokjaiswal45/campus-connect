@@ -14,8 +14,17 @@ class AuthControllerTest {
     private final UserRepository users = mock(UserRepository.class);
     private final PasswordEncoder encoder = mock(PasswordEncoder.class);
     private final EmailOtpService otp = mock(EmailOtpService.class);
+    private final com.campusconnect.service.OtpMailAvailability mailAvailability = mock(com.campusconnect.service.OtpMailAvailability.class);
     private final AuthController controller = new AuthController(
-            users, encoder, otp, mock(EmailValidator.class), "bmsce.ac.in");
+            users, encoder, otp, mailAvailability, mock(EmailValidator.class), "bmsce.ac.in");
+
+    @Test
+    void registrationOtpRequestReportsSenderFailureWithoutPretendingToSendACode() {
+        doThrow(new IllegalStateException("SMTP unavailable")).when(mailAvailability).ensureReady();
+        var response = controller.sendOtp(new AuthController.SendOtpRequest("student@bmsce.ac.in"));
+        assertEquals(HttpStatus.SERVICE_UNAVAILABLE, response.getStatusCode());
+        verifyNoInteractions(otp);
+    }
 
     @Test
     void registrationRejectsOversizedNameBeforeHashing() {
@@ -29,6 +38,14 @@ class AuthControllerTest {
     void registrationRejectsOversizedPasswordBeforeHashing() {
         var result = controller.register(new AuthController.Register(
                 "Student", "student@bmsce.ac.in", "p".repeat(73)));
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+        verifyNoInteractions(users, encoder);
+    }
+
+    @Test
+    void registrationRejectsOversizedUtf8Password() {
+        var result = controller.register(new AuthController.Register(
+                "Student", "student@bmsce.ac.in", "界".repeat(25)));
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
         verifyNoInteractions(users, encoder);
     }

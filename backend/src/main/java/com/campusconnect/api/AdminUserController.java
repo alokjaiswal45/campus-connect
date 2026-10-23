@@ -70,6 +70,25 @@ public class AdminUserController {
                 .body(UserView.from(users.save(staff)));
     }
 
+    public record StudentAccessRequest(Boolean active) {}
+
+    @PutMapping("/{id}/student-access")
+    @org.springframework.transaction.annotation.Transactional
+    public ResponseEntity<UserView> studentAccess(@PathVariable Long id, @RequestBody StudentAccessRequest request) {
+        if (request == null || request.active() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Specify active true or false");
+        }
+        User student = users.lockById(id).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
+        if (!"STUDENT".equals(student.getRole())) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only student account access can be updated here");
+        }
+        // Does not modify passwords, email addresses, roles or email-verification state.
+        student.setAccountActive(request.active());
+        org.slf4j.LoggerFactory.getLogger(AdminUserController.class).info("Student account access changed: id={}, active={}", id, request.active());
+        return ResponseEntity.ok(UserView.from(users.save(student)));
+    }
+
     @PutMapping("/{id}/terminate")
     public ResponseEntity<UserView> terminate(@PathVariable Long id) {
         User employee = users.findById(id).orElseThrow(() ->

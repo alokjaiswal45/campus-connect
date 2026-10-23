@@ -2,9 +2,9 @@ name: Campus Connect Build
 
 on:
   push:
-    branches: [feature/role-based-portals]
+    branches: [feature/role-based-portals, fix/student-claims-staff-resolution]
   pull_request:
-    branches: [main]
+    branches: [main, feature/role-based-portals]
 
 jobs:
   frontend:
@@ -61,6 +61,8 @@ jobs:
         run: |
           mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/001_role_portals_lost_found.sql
           mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/002_claim_disputes.sql
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/003_student_password_resets.sql
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test < backend/db/migrations/004_account_profiles.sql
       - name: Verify migration schema
         run: |
-          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test -e 'SHOW COLUMNS FROM lost_item LIKE "custody_accepted_at"; SHOW TABLES LIKE "item_claims"; SHOW TABLES LIKE "item_images"; SHOW TABLES LIKE "claim_disputes";'
+          mysql -h 127.0.0.1 -uroot -ptestroot campus_connect_test -e 'SHOW COLUMNS FROM lost_item LIKE "custody_accepted_at"; SHOW TABLES LIKE "item_claims"; SHOW TABLES LIKE "item_images"; SHOW TABLES LIKE "claim_disputes"; SHOW TABLES LIKE "account_profiles";'

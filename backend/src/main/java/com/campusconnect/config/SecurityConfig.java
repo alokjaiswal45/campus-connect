@@ -148,9 +148,14 @@ public class SecurityConfig {
                                 HttpMethod.POST,
                                 "/api/auth/register",
                                 "/api/auth/send-otp",
-                                "/api/auth/verify-otp"
+                                "/api/auth/verify-otp",
+                                "/api/auth/password-reset/request",
+                                "/api/auth/password-reset/confirm"
                         )
                         .permitAll()
+
+                        .requestMatchers(HttpMethod.POST, "/api/auth/change-password")
+                        .hasRole("STUDENT")
 
                         // Public health endpoint.
                         .requestMatchers(
@@ -213,6 +218,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/items/*/claims",
                                 "/api/claims/*/disputes", "/api/claims/*/evidence")
                         .hasRole("STUDENT")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/items/*/close")
+                        .hasRole("STAFF")
 
                         // Lost-and-found desk operations.
                         .requestMatchers("/api/staff/**")
