@@ -4,6 +4,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Router } from '@angular/router';
+import { StudentDashboardComponent } from './student-dashboard.component';
 import { CampusSceneComponent } from './campus-scene.component';
 import { AccountLinkComponent } from './account-link.component';
 import { CampusIconComponent } from './campus-icon.component';
@@ -20,12 +21,15 @@ type LibraryStep =
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent, CampusSceneComponent],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent, CampusSceneComponent, StudentDashboardComponent],
   templateUrl: './app.component.html'
 })
 export class AppComponent implements OnInit {
 
   page = 'dashboard';
+  dashboardSearchActive = false;
+  searchFromDashboard(query: string): void { this.nav('resources'); this.search = query; this.dashboardSearchActive = !!query; if(query) this.libraryStep = 'documents'; }
+  viewDashboardItem(item: any): void { this.nav('lost'); this.openItem(item); }
 
   user: any = null;
 
@@ -245,10 +249,10 @@ export class AppComponent implements OnInit {
   // Admin forms
   newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
   campusUsers: any[] = [];
-  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'overview';
-  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'STUDENT';
+  adminSection: 'overview' | 'people' | 'academics' | 'lostfound' = 'people';
+  peopleTab: 'STUDENT' | 'TEACHER' | 'STAFF' = 'TEACHER';
   peopleSearch = '';
-  employeeFormOpen = false;
+  employeeFormOpen = true;
   employeeSaving = false;
   employeeTerminatingId: number | null = null;
   get filteredCampusUsers(): any[] {
@@ -257,7 +261,11 @@ export class AppComponent implements OnInit {
       (!query || [u.name, u.email, u.role].some((v: string) => String(v || '').toLowerCase().includes(query))));
   }
   countPeople(role: string): number { return this.campusUsers.filter(u => u.role === role).length; }
+  selectedDirectoryAccount: any = null;
+  adminNavigate(section: 'overview' | 'people' | 'academics' | 'lostfound'): void { this.nav('admin'); this.selectAdminSection(section); this.selectedDirectoryAccount = null; }
+  scrollEmployeeForm(): void { setTimeout(() => document.querySelector('.admin-employee-form')?.scrollIntoView({block:'center',behavior:'smooth'})); }
   selectAdminSection(section: 'overview' | 'people' | 'academics' | 'lostfound'): void {
+    this.selectedDirectoryAccount = null;
     this.adminSection = section;
     if (section === 'people') this.loadCampusUsers();
     if (section === 'lostfound') { this.loadAdminStats(); this.loadAdminDisputes(); }
@@ -283,7 +291,7 @@ export class AppComponent implements OnInit {
       next: () => {
         this.employeeSaving = false;
         this.notice = 'Employee account created.';
-        this.employeeFormOpen = false;
+        this.employeeFormOpen = true;
         this.peopleTab = this.newStaff.role as 'TEACHER' | 'STAFF';
         this.newStaff = { name: '', email: '', password: '', role: 'TEACHER' };
         this.loadCampusUsers();
@@ -592,6 +600,7 @@ export class AppComponent implements OnInit {
   // ==========================================
 
   get libraryDocuments(): any[] {
+    if (this.dashboardSearchActive) return this.filteredDocs;
 
     if (!this.selectedLibrarySubject) {
       return [];
@@ -655,6 +664,7 @@ export class AppComponent implements OnInit {
   // ==========================================
 
   resetLibrary(): void {
+    this.dashboardSearchActive = false;
 
     this.libraryStep = 'branch';
 
@@ -669,6 +679,7 @@ export class AppComponent implements OnInit {
   }
 
   selectLibraryBranch(branch: any): void {
+    this.dashboardSearchActive = false;
 
     this.selectedLibraryBranch = branch;
 

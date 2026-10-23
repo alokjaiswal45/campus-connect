@@ -2,14 +2,13 @@ import { CommonModule } from '@angular/common';
 import { Component, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
-import { CampusSceneComponent } from './campus-scene.component';
 import { AccountLinkComponent } from './account-link.component';
 import { CampusIconComponent } from './campus-icon.component';
 import { ApiService } from './api.service';
 
 @Component({
   standalone: true,
-  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent, CampusSceneComponent],
+  imports: [CommonModule, FormsModule, CampusIconComponent, AccountLinkComponent],
   templateUrl: './role-portal.component.html'
 })
 export class RolePortalComponent implements OnInit {
@@ -26,10 +25,13 @@ export class RolePortalComponent implements OnInit {
   teacherModule: number | null = null;
   teacherExam = '';
   teacherYear = '';
+  teacherModuleCount(module: number): number { return this.documents.filter(doc => doc.type === 'RESOURCE' && String(doc.subject?.id) === String(this.teacherSubject?.id) && Number(doc.moduleNumber) === module).length; }
+  setTeacherBranch(id: any): void { this.teacherBranch = this.branches.find(b => String(b.id) === String(id)) || null; this.teacherSubject = null; this.teacherSemester = null; this.teacherStep = this.teacherBranch ? 'semester' : 'branch'; }
+  setTeacherSemester(value: any): void { this.teacherSemester = value ? Number(value) : null; this.teacherSubject = null; this.teacherStep = 'subject'; }
+  setTeacherSubject(id: any): void { this.teacherSubject = this.subjects.find(s => String(s.id) === String(id)) || null; this.teacherStep = this.teacherSubject ? 'folder' : 'subject'; if(this.teacherSubject) this.newDoc.subjectId = String(this.teacherSubject.id); }
   chooseTeacherType(type: 'RESOURCE' | 'PAPER'): void {
-    this.teacherLibraryType = type; this.teacherStep = 'branch';
-    this.teacherBranch = null; this.teacherSemester = null; this.teacherSubject = null;
-    this.teacherModule = null; this.teacherExam = ''; this.teacherYear = '';
+    this.teacherLibraryType = type; this.teacherModule = null; this.teacherExam = ''; this.teacherYear = '';
+    this.teacherStep = this.teacherSubject ? 'folder' : 'branch';
   }
   teacherBack(): void {
     const prev: Record<string, string> = { semester: 'branch', subject: 'semester', folder: 'subject', year: 'folder', documents: this.teacherLibraryType === 'RESOURCE' ? 'folder' : 'year' };
@@ -61,7 +63,7 @@ export class RolePortalComponent implements OnInit {
   teacherTab: 'browse' | 'upload' = 'browse';
   openTeacherUpload(): void {
     this.teacherTab = 'upload';
-    setTimeout(() => document.querySelector('.teacher-heading')?.scrollIntoView({
+    setTimeout(() => document.querySelector('.teacher-upload-studio')?.scrollIntoView({
       behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
       block: 'start'
     }));
@@ -82,7 +84,7 @@ export class RolePortalComponent implements OnInit {
   }
   loadTeacherLibrary(): void {
     this.api.get('/branches').subscribe({ next: branches => this.branches = branches, error: () => this.error = 'Could not load branches.' });
-    this.api.get('/subjects').subscribe({ next: subjects => this.subjects = subjects, error: () => this.error = 'Could not load subjects.' });
+    this.api.get('/subjects').subscribe({ next: subjects => { this.subjects = subjects; if (!this.teacherSubject && subjects.length) { const first = subjects[0]; this.teacherSubject = first; this.teacherBranch = first.branch; this.teacherSemester = Number(first.semester); this.teacherModule = 1; this.teacherStep = 'documents'; if(!this.newDoc.subjectId) this.newDoc.subjectId = String(first.id); } }, error: () => this.error = 'Could not load subjects.' });
     this.api.get('/documents').subscribe({ next: documents => this.documents = documents, error: () => this.error = 'Could not load documents.' });
   }
   openDocument(doc: any): void {
@@ -96,6 +98,8 @@ export class RolePortalComponent implements OnInit {
   pdf: File | null = null;
   newDoc = { subjectId: '', title: '', type: 'RESOURCE', moduleNumber: '', examType: '', academicYear: '' };
   claims: any[] = [];
+  openRoleProfile(): void { this.router.navigateByUrl('/' + this.section + '/profile'); }
+  get openReportCount(): number { return this.inventory.filter(item => item.status === 'OPEN').length; }
   staffTab: 'operations' | 'storage' = 'operations';
   storageSearch = '';
   get filteredStoredItems(): any[] {
@@ -240,6 +244,9 @@ export class RolePortalComponent implements OnInit {
         if (generation !== this.inventoryGeneration) return;
         this.inventory = items;
         this.loadStaffPhotos(items);
+        if (!this.itemId && this.staffTab === 'operations' && items.length) {
+          this.selectItem(items.find(item => item.status === 'OPEN') || items[0]);
+        }
         if (this.selectedStaffItem?.custodyAcceptedAt) this.storageLocation = this.selectedStaffItem.custodyLocation;
       },
       error: () => { if (generation === this.inventoryGeneration) this.error = 'Unable to refresh inventory. Your last saved receipt is still shown.'; }

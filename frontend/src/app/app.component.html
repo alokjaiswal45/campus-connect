@@ -1,8 +1,8 @@
 
-<div class="shell">
+<div class="shell" [class.fresh-student]="user?.role === 'STUDENT'" [class.obsidian-admin]="isAdmin">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" *ngIf="!user">
 
     <div class="brand">
       <span class="brand-icon"><cc-icon name="spark" /></span>
@@ -61,11 +61,18 @@
 
   </aside>
 
+  <header class="fresh-nav" *ngIf="user?.role === 'STUDENT'">
+    <a class="fresh-brand" href="/student/dashboard" (click)="$event.preventDefault(); nav('dashboard')"><span class="fresh-brand-mark"><i></i><i></i></span><span>Campus Connect<small>BMSCE</small></span></a>
+    <nav aria-label="Student workspace"><button type="button" [class.active]="page === 'dashboard'" (click)="nav('dashboard')"><cc-icon name="home" />Overview</button><button type="button" [class.active]="page === 'resources'" (click)="nav('resources')"><cc-icon name="file" />Study Resources</button><button type="button" [class.active]="page === 'papers'" (click)="nav('papers')"><cc-icon name="file" />Question Papers</button><button type="button" [class.active]="page === 'lost'" (click)="nav('lost')"><cc-icon name="tag" />Lost &amp; Found</button></nav>
+    <cc-account-link section="student" [user]="user" tone="fresh" />
+  </header>
+  <header class="obsidian-header" *ngIf="isAdmin"><div class="obsidian-brand"><cc-icon name="connect" /><div>Campus<br>Connect</div></div><nav aria-label="Administrator workspace"><button type="button" [class.active]="adminSection === 'overview'" (click)="adminNavigate('overview')">Overview</button><button type="button" [class.active]="adminSection === 'people'" (click)="adminNavigate('people')">People &amp; Access</button><button type="button" [class.active]="adminSection === 'academics'" (click)="adminNavigate('academics')">Academics</button><button type="button" [class.active]="adminSection === 'lostfound'" (click)="adminNavigate('lostfound')">Lost &amp; Found Review</button></nav><cc-account-link section="admin" [user]="user" [dark]="true" /></header>
+  <aside class="obsidian-rail" *ngIf="isAdmin" aria-label="Administrator shortcuts"><button type="button" aria-label="Admin overview" (click)="adminNavigate('overview')"><cc-icon name="home" /></button><button type="button" aria-label="Account directory" (click)="adminNavigate('people')"><cc-icon name="campus" /></button><button type="button" aria-label="Academic structure" (click)="adminNavigate('academics')"><cc-icon name="book" /></button><button type="button" aria-label="Ownership disputes" (click)="adminNavigate('lostfound')"><cc-icon name="shield" /></button><button type="button" aria-label="Sign out" (click)="logout()"><cc-icon name="logout" /></button></aside>
   <!-- MAIN -->
   <main class="main">
 
     <!-- TOP BAR -->
-    <header class="topbar">
+    <header class="topbar" *ngIf="!user">
 
       <div class="breadcrumb">
         Campus Connect
@@ -123,7 +130,8 @@
       </div>
 
       <!-- DASHBOARD -->
-      <ng-container *ngIf="page === 'dashboard'">
+      <cc-student-dashboard *ngIf="page === 'dashboard' && user?.role === 'STUDENT'" [docs]="docs" [subjects]="subjects" [items]="items" [photoUrls]="cardPhotoUrls" (navigate)="nav($event)" (search)="searchFromDashboard($event)" (openDocument)="openDoc($event)" (viewItem)="viewDashboardItem($event)" />
+      <ng-container *ngIf="page === 'dashboard' && user?.role !== 'STUDENT'">
 
         <div class="hero">
 
@@ -500,7 +508,7 @@
             <div>
 
               <h2 *ngIf="page === 'resources'">
-                Module {{ selectedLibraryModule }}
+                {{ dashboardSearchActive ? 'Search results' : 'Module ' + selectedLibraryModule }}
               </h2>
 
               <h2 *ngIf="page === 'papers'">
@@ -673,18 +681,8 @@
       <!-- ADMIN PANEL -->
       <ng-container *ngIf="page === 'admin'">
 
-        <div class="page-heading">
-          <div class="eyebrow">ADMINISTRATOR WORKSPACE</div>
-          <h1>Manage Campus</h1>
-          <p>Manage your campus structure, people, and Lost &amp; Found oversight.</p>
-        </div>
+        <div class="obsidian-title"><div><h1>{{ adminSection === 'people' ? 'The people behind your campus.' : adminSection === 'academics' ? 'A foundation for learning.' : adminSection === 'lostfound' ? 'A fair review. A safe return.' : 'Your campus. In perspective.' }}</h1><p>Manage student, teacher and staff accounts, access and permissions.</p></div><button type="button" *ngIf="adminSection === 'people'" (click)="employeeFormOpen = true; scrollEmployeeForm()"><cc-icon name="campus" />Add employee</button></div>
 
-        <nav class="admin-section-nav" *ngIf="isAdmin" aria-label="Administration sections">
-          <button [class.active]="adminSection === 'overview'" (click)="selectAdminSection('overview')"><cc-icon name="grid" />Overview</button>
-          <button [class.active]="adminSection === 'people'" (click)="selectAdminSection('people')"><cc-icon name="campus" />People &amp; access</button>
-          <button [class.active]="adminSection === 'academics'" (click)="selectAdminSection('academics')"><cc-icon name="book" />Branches &amp; subjects</button>
-          <button [class.active]="adminSection === 'lostfound'" (click)="selectAdminSection('lostfound')"><cc-icon name="shield" />Lost &amp; Found review</button>
-        </nav>
         <section *ngIf="isAdmin && adminSection === 'overview'" class="admin-overview">
           <div class="admin-overview-intro"><h2>Campus administration</h2><p>Select a workspace to manage accounts, academics, or Lost &amp; Found reviews.</p></div>
           <div class="admin-overview-grid">
@@ -730,11 +728,6 @@
           </div>
         </section>
         <section *ngIf="isAdmin && adminSection === 'people'" class="admin-people">
-          <div class="admin-people-heading">
-            <div><div class="eyebrow">CAMPUS DIRECTORY</div><h2>People &amp; access</h2><p>Manage student visibility and employee access from one organized workspace.</p></div>
-            <button class="primary-btn" (click)="employeeFormOpen = !employeeFormOpen; error = ''">{{ employeeFormOpen ? 'Close form ×' : '+ Add employee' }}</button>
-          </div>
-
           <div class="admin-people-metrics">
             <button type="button" [class.selected]="peopleTab === 'STUDENT'" (click)="peopleTab = 'STUDENT'"><span class="metric-symbol"><cc-icon name="campus" /></span><strong>{{ countPeople('STUDENT') }}</strong><small>Students</small></button>
             <button type="button" [class.selected]="peopleTab === 'TEACHER'" (click)="peopleTab = 'TEACHER'"><span class="metric-symbol"><cc-icon name="book" /></span><strong>{{ countPeople('TEACHER') }}</strong><small>Teachers</small></button>
@@ -742,20 +735,20 @@
           </div>
 
           <section class="panel admin-employee-form" *ngIf="employeeFormOpen">
-            <div class="section-heading"><div><h2>New employee</h2><p>Teachers upload academic materials; desk staff process Lost &amp; Found cases.</p></div></div>
+            <div class="section-heading"><div><h2>Create employee account</h2><p>Teachers upload academic materials; desk staff process Lost &amp; Found cases.</p></div></div>
             <form (ngSubmit)="createStaff()" class="admin-employee-fields">
               <label>Employee type <select name="employeeRole" [(ngModel)]="newStaff.role" required><option value="TEACHER">Teacher · Academic resources</option><option value="STAFF">Staff · Lost &amp; Found</option></select></label>
               <label>Full name <input name="employeeName" [(ngModel)]="newStaff.name" maxlength="100" placeholder="Full name" required></label>
               <label>College email <input name="employeeEmail" [(ngModel)]="newStaff.email" type="email" placeholder="name@bmsce.ac.in" required></label>
               <label>Temporary password <input name="employeePassword" [(ngModel)]="newStaff.password" type="password" minlength="12" maxlength="72" autocomplete="new-password" placeholder="12–72 characters" required></label>
-              <div class="admin-form-actions"><button type="button" class="outline-btn" (click)="employeeFormOpen = false">Cancel</button><button type="submit" class="primary-btn" [disabled]="employeeSaving || !newStaff.name.trim() || !isCollegeEmail(newStaff.email) || newStaff.password.length < 12 || newStaff.password.length > 72">{{ employeeSaving ? 'Creating…' : 'Create employee →' }}</button></div>
+              <div class="admin-form-actions"><button type="submit" class="primary-btn" [disabled]="employeeSaving || !newStaff.name.trim() || !isCollegeEmail(newStaff.email) || newStaff.password.length < 12 || newStaff.password.length > 72">{{ employeeSaving ? 'Creating…' : 'Create account →' }}</button></div>
             </form>
           </section>
 
           <section class="panel admin-directory">
             <div class="admin-directory-toolbar">
-              <div><h2>{{ peopleTab === 'STUDENT' ? 'Student directory' : peopleTab === 'TEACHER' ? 'Teachers' : 'Lost &amp; Found staff' }}</h2><p>{{ filteredCampusUsers.length }} account(s) in this view</p></div>
-              <div class="admin-directory-actions"><input [(ngModel)]="peopleSearch" placeholder="Search by name or email" aria-label="Search people"><button class="outline-btn" (click)="loadCampusUsers()">↻ Refresh</button></div>
+              <div><h2>Account directory</h2><p>{{ filteredCampusUsers.length }} account(s) in this view</p></div>
+              <nav class="obsidian-role-tabs" aria-label="Directory role"><button type="button" [class.active]="peopleTab === 'STUDENT'" (click)="peopleTab = 'STUDENT'">Students</button><button type="button" [class.active]="peopleTab === 'TEACHER'" (click)="peopleTab = 'TEACHER'">Teachers</button><button type="button" [class.active]="peopleTab === 'STAFF'" (click)="peopleTab = 'STAFF'">Staff</button></nav><div class="admin-directory-actions"><input [(ngModel)]="peopleSearch" placeholder="Search by name or email" aria-label="Search people"><button class="outline-btn" (click)="loadCampusUsers()">↻ Refresh</button></div>
             </div>
             <div class="admin-table-scroll">
               <table class="admin-people-table">
@@ -765,7 +758,7 @@
                     <td><div class="admin-person"><span class="admin-person-avatar">{{ account.name?.[0] || '?' }}</span><div><strong>{{ account.name }}</strong><small>{{ account.email }}</small></div></div></td>
                     <td><span class="admin-role-tag">{{ account.role === 'STAFF' ? 'Lost &amp; Found Staff' : account.role === 'TEACHER' ? 'Teacher' : 'Student' }}</span></td>
                     <td><span class="admin-account-status" [class.inactive]="!account.accountActive || !account.emailVerified">{{ !account.accountActive ? 'Inactive' : account.emailVerified ? 'Active' : 'Unverified' }}</span></td>
-                    <td><button type="button" class="admin-terminate" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" [disabled]="employeeTerminatingId === account.id" (click)="terminateEmployee(account)">{{ employeeTerminatingId === account.id ? 'Terminating…' : 'Terminate access' }}</button><button type="button" class="outline-btn" *ngIf="account.role === 'STUDENT'" [disabled]="employeeTerminatingId !== null" (click)="toggleStudentAccess(account)">{{ account.accountActive ? 'Deactivate access' : 'Activate access' }}</button><span class="admin-no-action" *ngIf="account.role !== 'STUDENT' && !account.accountActive">—</span></td>
+                    <td><button type="button" class="outline-btn obsidian-view-account" (click)="selectedDirectoryAccount = account">View account →</button><button type="button" class="admin-terminate" *ngIf="(account.role === 'TEACHER' || account.role === 'STAFF') && account.accountActive" [disabled]="employeeTerminatingId === account.id" (click)="terminateEmployee(account)">{{ employeeTerminatingId === account.id ? 'Terminating…' : 'Terminate access' }}</button><button type="button" class="outline-btn" *ngIf="account.role === 'STUDENT'" [disabled]="employeeTerminatingId !== null" (click)="toggleStudentAccess(account)">{{ account.accountActive ? 'Deactivate access' : 'Activate access' }}</button><span class="admin-no-action" *ngIf="account.role !== 'STUDENT' && !account.accountActive">—</span></td>
                   </tr>
                   <tr *ngIf="filteredCampusUsers.length === 0"><td colspan="4" class="admin-directory-empty">No matching accounts. Try another search or choose a different role.</td></tr>
                 </tbody>
@@ -773,7 +766,9 @@
             </div>
             <p class="admin-directory-footnote">Termination disables sign-in but preserves documents, case history, and audit records. Student access can be enabled or disabled here. Students manage their own passwords through their registered college email.</p>
           </section>
+          <div class="obsidian-shortcuts"><button type="button" (click)="adminNavigate('academics')"><cc-icon name="book" /><span><strong>Academic structure</strong><small>Manage departments, courses and subjects.</small></span><cc-icon name="arrow" /></button><button type="button" (click)="adminNavigate('lostfound')"><cc-icon name="folder" /><span><strong>Ownership disputes</strong><small>Review and resolve claims across campus.</small></span><cc-icon name="arrow" /></button></div>
         </section>
+        <section class="obsidian-account-detail panel" *ngIf="selectedDirectoryAccount as account" role="region" aria-label="Selected account"><button type="button" class="outline-btn" (click)="selectedDirectoryAccount = null">Close account details ×</button><h2>{{ account.name }}</h2><p>{{ account.email }}</p><p>{{ account.role }} · {{ account.accountActive ? 'Active' : 'Inactive' }} · {{ account.emailVerified ? 'Email verified' : 'Unverified email' }}</p></section>
         <div class="admin-grid" *ngIf="isAdmin && adminSection === 'academics'">
 
           <!-- ADD BRANCH -->

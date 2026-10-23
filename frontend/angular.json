@@ -22,7 +22,15 @@
             "tsConfig": "tsconfig.app.json",
             "styles": [
               "src/styles.css",
-              "src/premium.css"
+              "src/premium.css",
+              "src/role-themes.css"
+            ],
+            "assets": [
+              {
+                "glob": "**/*",
+                "input": "src/assets",
+                "output": "assets"
+              }
             ]
           },
           "configurations": {
